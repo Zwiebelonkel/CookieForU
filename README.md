@@ -48,6 +48,7 @@ src/pages.ts
 public/index.html
 public/app.js
 public/ownership.js
+public/info-menu.js
 public/style.css
 public/apple-touch-icon.png
 public/certificate.css
