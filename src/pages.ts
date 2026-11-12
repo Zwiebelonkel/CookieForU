@@ -1,4 +1,5 @@
 import QRCode from 'qrcode';
+import { randomUUID } from 'node:crypto';
 import type { describe } from './cookies.js';
 
 type Cookie = ReturnType<typeof describe>;
@@ -39,6 +40,7 @@ export async function certificatePage(cookie: Cookie, printView: boolean) {
       <p class="rarity">${escape(cookie.rarity)}</p>
       <p class="probability">${escape(cookie.rarityProbabilityPercent)}% of random cookies · rules v${cookie.rulesVersion}</p>
       <dl>
+        ${printView ? `<div><dt>Certificate ID</dt><dd class="hash">${randomUUID()}</dd></div>` : ''}
         <div><dt>Original cookie ID</dt><dd class="hash">${cookie.id}</dd></div>
         <div><dt>Issued at (UTC)</dt><dd>${escape(cookie.createdAt)}</dd></div>
         <div><dt>Longest matching sequence</dt><dd>${cookie.maxStreak} characters</dd></div>

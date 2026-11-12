@@ -151,6 +151,14 @@ test('cookie service with a real local libSQL database', async t => {
       assert.equal(response.headers.get('cache-control'), 'no-store');
       const html = await response.text();
       assert.match(html, /Cookie Certificate/);
+      const certificateId = html.match(/<dt>Certificate ID<\/dt><dd class="hash">([0-9a-f-]{36})<\/dd>/)?.[1];
+      assert.ok(certificateId);
+      const second = await fetch(base + `/api/cookies/${cookie.id}/certificate`, {
+        headers: { Authorization: 'Bearer ' + ownerToken }
+      });
+      const secondId = (await second.text()).match(/<dt>Certificate ID<\/dt><dd class="hash">([0-9a-f-]{36})<\/dd>/)?.[1];
+      assert.ok(secondId);
+      assert.notEqual(secondId, certificateId);
       assert.ok(html.includes(`https://cookies.example/verify/${cookie.id}`));
       assert.ok(html.includes(cookie.createdAt));
       assert.match(html, /data:image\/png;base64,/);

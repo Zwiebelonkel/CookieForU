@@ -173,7 +173,7 @@ test('Owner Pass restoration and independent, expiring ownership checks', async 
 
     await t.test('downloaded passes restore existing and eaten cookies without issuing new ones', async () => {
       const window: any = {};
-      runInNewContext(await readFile(new URL('../public/ownership.js', import.meta.url), 'utf8'), { window, fetch, AbortSignal });
+      runInNewContext(await readFile(new URL('../public/ownership.js', import.meta.url), 'utf8'), { window, fetch, AbortSignal, crypto: globalThis.crypto });
       const helpers = window.CookieOwnership;
       const text = helpers.makePass(base, owner.cookie.id, owner.token);
       const pass = helpers.parsePass(text, base);

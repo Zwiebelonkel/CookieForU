@@ -610,6 +610,7 @@
     // Open during the click so browsers allow the new tab. The secret is sent
     // only in the Authorization header, never in a link or the certificate.
     const certificateWindow = window.open("about:blank", "_blank");
+    ownership.downloadPass(apiBase, cookie.id, ownerToken);
     if (!certificateWindow) {
       status.textContent = "Allow pop-ups to open your certificate, then try again.";
       return;
@@ -620,7 +621,6 @@
 
     const current = generation;
     const id = cookie.id;
-    const token = ownerToken;
     busy = true;
     status.textContent = "";
     render();
@@ -645,8 +645,6 @@
       certificateWindow.document.open();
       certificateWindow.document.write(html);
       certificateWindow.document.close();
-      // Keep the key in memory, outside the certificate HTML, links and printed PDF.
-      certificateWindow.downloadCookieOwnerPass = () => ownership.downloadPass(apiBase, id, token, certificateWindow);
     } catch (error) {
       certificateWindow.close();
       if (current === generation) {

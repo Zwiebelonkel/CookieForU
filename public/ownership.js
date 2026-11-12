@@ -37,17 +37,19 @@
   function makePass(apiOrigin, cookieId, ownerToken) {
     return JSON.stringify({
       type: "cookie-owner-pass", version: 1, serviceOrigin: apiOrigin,
+      ownerPassId: crypto.randomUUID(),
       cookieId, ownerToken, exportedAt: new Date().toISOString(),
       keepPrivate: "Anyone with this file can control this cookie. Store it privately; do not share it with a verifier.",
     }, null, 2);
   }
 
   function downloadPass(apiOrigin, cookieId, ownerToken, targetWindow = window) {
-    const blob = new Blob([makePass(apiOrigin, cookieId, ownerToken)], { type: "application/json" });
+    const pass = makePass(apiOrigin, cookieId, ownerToken);
+    const blob = new Blob([pass], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = targetWindow.document.createElement("a");
     link.href = url;
-    link.download = `cookie-${cookieId}-PRIVATE-owner-pass.json`;
+    link.download = `cookie-${cookieId}-PRIVATE-owner-pass-${JSON.parse(pass).ownerPassId}.json`;
     targetWindow.document.body.append(link);
     link.click();
     link.remove();
