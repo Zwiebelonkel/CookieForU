@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#a88b72">
+  <title>A cookie for you</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100svh;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(
+        ellipse at center,
+        #b39980,
+        #a88b72
+      );
+      color: #49372a;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    main {
+      width: 100%;
+      padding: 32px 20px;
+      text-align: center;
+    }
+
+    .cookie {
+      margin-bottom: 38px;
+      font-size: 104px;
+      line-height: 1;
+      user-select: none;
+      filter: drop-shadow(0 8px 12px #49372a20);
+      animation: pulse 3.8s ease-in-out infinite;
+    }
+
+    .id {
+      display: block;
+      font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+      font-size: clamp(9px, 2.6vw, 12px);
+      line-height: 1.9;
+      letter-spacing: 0.08em;
+      opacity: 0.8;
+      user-select: all;
+    }
+
+    .id span {
+      display: block;
+    }
+
+    p {
+      margin: 24px 0 0;
+      font-size: clamp(11px, 3vw, 14px);
+      line-height: 1.6;
+    }
+
+    ::selection {
+      background: #73513b40;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        transform: translateY(0) scale(1);
+      }
+      50% {
+        transform: translateY(-5px) scale(1.045);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .cookie {
+        animation: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main aria-label="A cookie just for you">
+    <div class="cookie" role="img" aria-label="Cookie">🍪</div>
+
+    <output
+      class="id"
+      id="cookie-id"
+      aria-label="Your unique cookie ID"
+      aria-live="polite"
+    ></output>
+
+    <p>This cookie is only supposed to be for you.</p>
+
+    <noscript>
+      <p>Enable JavaScript to receive your cookie.</p>
+    </noscript>
+  </main>
+
+  <script>
+    async function createCookie() {
+      const output = document.getElementById("cookie-id");
+
+      try {
+        // Cryptographically secure randomness for each visit.
+        const random = crypto.getRandomValues(new Uint8Array(32));
+
+        // Create a SHA-256 hash when Web Crypto hashing is available.
+        const bytes = crypto.subtle
+          ? new Uint8Array(await crypto.subtle.digest("SHA-256", random))
+          : random;
+
+        const id = Array.from(bytes, byte =>
+          byte.toString(16).padStart(2, "0")
+        ).join("");
+
+        const lines = [id.slice(0, 32), id.slice(32)].map(text => {
+          const span = document.createElement("span");
+          span.textContent = text;
+          return span;
+        });
+
+        output.replaceChildren(...lines);
+
+        // Replace the browser cookie with the new ID on each visit.
+        try {
+          document.cookie =
+            "your_cookie=" + id +
+            "; Path=/; Max-Age=31536000; SameSite=Lax" +
+            (location.protocol === "https:" ? "; Secure" : "");
+        } catch {
+          // The ID still works if the browser blocks cookie storage.
+        }
+      } catch {
+        output.textContent = "Please reload to receive your cookie.";
+      }
+    }
+
+    // Also creates a new ID when returning via the back/forward cache.
+    window.addEventListener("pageshow", createCookie);
+  </script>
+</body>
+</html>
