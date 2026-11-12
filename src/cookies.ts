@@ -3,7 +3,7 @@ import type { Client, Row } from '@libsql/client';
 
 export const HEX_ID = /^[0-9a-f]{64}$/;
 export const RULES_VERSION = 1;
-const levels = [
+export const levels = [
   { name: 'common', percent: '79.503905720228', oneIn: 1.2578 },
   { name: 'uncommon', percent: '19.107037165713', oneIn: 5.233674 },
   { name: 'rare', percent: '1.303162640682', oneIn: 76.736393 },

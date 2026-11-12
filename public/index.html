@@ -19,9 +19,23 @@
     <link rel="stylesheet" href="./style.css" />
     <script src="./zoom.js" defer></script>
     <script src="./ownership.js" defer></script>
+    <script src="./info-menu.js" defer></script>
     <script src="./app.js" defer></script>
   </head>
   <body>
+    <details id="info-menu" class="owner-menu info-menu">
+      <summary aria-label="Rarity chances" title="Rarity chances" aria-controls="rarity-info-panel">
+        <span class="info-icon" aria-hidden="true">i</span>
+      </summary>
+      <section id="rarity-info-panel" class="owner-menu-panel info-menu-panel" aria-labelledby="rarity-info-title">
+        <h2 id="rarity-info-title">A little luck.</h2>
+        <p class="info-intro">Every cookie is random. Here’s how rare yours could be.</p>
+        <div id="rarity-chances"></div>
+        <p id="rarity-info-status" role="status">Loading chances…</p>
+        <button id="retry-rarity-info" type="button" hidden>Try again</button>
+        <p class="info-footnote">Bars share a 0–100% scale. Very small chances appear as a thin mark.</p>
+      </section>
+    </details>
     <main aria-label="A cookie just for you">
       <div
         class="cookie delivering"

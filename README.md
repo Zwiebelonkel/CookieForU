@@ -8,6 +8,8 @@ HTML-Frontend und druckbaren Zertifikaten. Kein Sites-Projekt.
 - Kryptografisch zufällige 64-stellige IDs, ausschließlich vom Server erzeugt.
 - Unverändertes Original und Raritätsregel v1 dauerhaft in Turso.
 - Kaffeebraune Website mit pulsierendem, langsam rotierendem Cookie.
+- Animiertes Info-Menü oben links mit Raritätschancen, Sternen und farbigen
+  Prozentbalken. Die Werte kommen direkt aus den Raritätsregeln des Servers.
 - Raritätsabhängige Kontur und Leuchten am Cookie, auch an Bisskanten.
   Seltenere Cookies schweben und pulsieren stärker und drehen sich schneller
   (60 Sekunden pro Umdrehung bei Common bis 9 Sekunden bei Mythic).

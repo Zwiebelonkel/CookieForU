@@ -1,7 +1,7 @@
 import express, { type Request, type Response, type NextFunction } from 'express';
 import type { Client } from '@libsql/client';
 import { fileURLToPath } from 'node:url';
-import { HEX_ID, describe, findCookie, issueCookie, ownsCookie, takeBite } from './cookies.js';
+import { HEX_ID, describe, findCookie, issueCookie, ownsCookie, takeBite, levels, RULES_VERSION } from './cookies.js';
 import { certificatePage, notFoundPage } from './pages.js';
 import { CHECK_CODE, createCheck, findCheck, confirmCheck, describeCheck } from './owner-checks.js';
 
@@ -64,6 +64,10 @@ export function createApp(db: Client, config: Config) {
   });
 
   app.use(express.json({ limit: '4kb', strict: true }));
+
+  app.get('/api/rarities', (_req, res) => {
+    res.json({ rulesVersion: RULES_VERSION, rarities: levels });
+  });
 
   app.get('/health', async (_req, res) => {
     try { await db.execute('SELECT 1'); res.json({ ok: true }); }

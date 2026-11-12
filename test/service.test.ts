@@ -32,6 +32,15 @@ test('cookie service with a real local libSQL database', async t => {
   }
 
   try {
+    await t.test('rarity info exposes the same six probabilities used for issued cookies', async () => {
+      const response = await fetch(base + '/api/rarities');
+      assert.equal(response.status, 200);
+      const data = await response.json();
+      assert.equal(data.rulesVersion, 1);
+      assert.deepEqual(data.rarities, Array.from({ length: 6 }, (_, index) => rarity(index + 2)));
+      assert.ok(Math.abs(data.rarities.reduce((sum: number, level: { percent: string }) => sum + Number(level.percent), 0) - 100) < 0.000001);
+    });
+
     await t.test('server generates IDs and rejects client-selected rare IDs', async () => {
       const { cookie } = await issue();
       assert.match(cookie.id, /^[0-9a-f]{64}$/);
