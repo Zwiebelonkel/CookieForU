@@ -42,6 +42,18 @@
     }, null, 2);
   }
 
+  function downloadPass(apiOrigin, cookieId, ownerToken, targetWindow = window) {
+    const blob = new Blob([makePass(apiOrigin, cookieId, ownerToken)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = targetWindow.document.createElement("a");
+    link.href = url;
+    link.download = `cookie-${cookieId}-PRIVATE-owner-pass.json`;
+    targetWindow.document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30_000);
+  }
+
   async function loadOwner(apiOrigin, cookieId, ownerToken) {
     const data = await apiJson(apiOrigin, `/api/cookies/${cookieId}/owner`, {
       headers: { Authorization: "Bearer " + ownerToken },
@@ -58,5 +70,5 @@
     });
   }
 
-  window.CookieOwnership = Object.freeze({ apiJson, parsePass, makePass, loadOwner, confirm, formatCode });
+  window.CookieOwnership = Object.freeze({ apiJson, parsePass, makePass, downloadPass, loadOwner, confirm, formatCode });
 })();

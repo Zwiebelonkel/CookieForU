@@ -620,6 +620,7 @@
 
     const current = generation;
     const id = cookie.id;
+    const token = ownerToken;
     busy = true;
     status.textContent = "";
     render();
@@ -644,6 +645,8 @@
       certificateWindow.document.open();
       certificateWindow.document.write(html);
       certificateWindow.document.close();
+      // Keep the key in memory, outside the certificate HTML, links and printed PDF.
+      certificateWindow.downloadCookieOwnerPass = () => ownership.downloadPass(apiBase, id, token, certificateWindow);
     } catch (error) {
       certificateWindow.close();
       if (current === generation) {
@@ -676,15 +679,7 @@
     try {
       await ownership.loadOwner(apiBase, id, token);
       if (current !== generation) return;
-      const blob = new Blob([ownership.makePass(apiBase, id, token)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `cookie-${id}-PRIVATE-owner-pass.json`;
-      document.body.append(link);
-      link.click();
-      link.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 30_000);
+      ownership.downloadPass(apiBase, id, token);
       ownerMenuStatus.textContent = "Owner Pass saved. Keep this file private; anyone with it can control your cookie.";
     } catch (error) {
       if (current === generation) ownerMenuStatus.textContent = error.message;

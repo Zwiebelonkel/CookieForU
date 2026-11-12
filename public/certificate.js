@@ -1,6 +1,22 @@
 (() => {
   "use strict";
-  document.getElementById("print")?.addEventListener("click", () => window.print());
+  const print = document.getElementById("print");
+  if (print) {
+    let downloadedForPrint = false;
+    const downloadOwnerPass = () => {
+      if (!downloadedForPrint && window.downloadCookieOwnerPass) {
+        window.downloadCookieOwnerPass();
+        downloadedForPrint = true;
+      }
+    };
+    print.addEventListener("click", () => {
+      downloadOwnerPass();
+      try { window.print(); }
+      finally { downloadedForPrint = false; }
+    });
+    window.addEventListener("beforeprint", downloadOwnerPass);
+    window.addEventListener("afterprint", () => { downloadedForPrint = false; });
+  }
   const panel = document.getElementById("owner-check");
   if (!panel) return;
   const { apiJson, formatCode } = window.CookieOwnership;

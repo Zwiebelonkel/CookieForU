@@ -17,6 +17,9 @@ HTML-Frontend und druckbaren Zertifikaten. Kein Sites-Projekt.
 - Zertifikate mit QR-Code und „Print / Save as PDF“ nur mit dem passenden
   Besitzer-Token. Bei geteilten Cookies ist „Certificate“ ausgeblendet.
 - Privater Owner-Pass als JSON-Download; auf einem anderen Browser wiederherstellbar.
+  Beim Zertifikatsdruck wird er automatisch separat heruntergeladen; der geheime
+  Owner-Key steht weder im Zertifikat noch im PDF. Auch beim Abbrechen des
+  Druckdialogs bleibt die heruntergeladene Datei erhalten.
 - Besitzprüfung ohne Konto: Ein eigener Prüfcode pro Prüfer, fünf Minuten gültig,
   einmal vom Owner bestätigbar. Das Ergebnis erscheint auf dem Gerät des Prüfers.
 - Wiederholte Erstellungsanfragen mit demselben Besitzer-Token liefern denselben
