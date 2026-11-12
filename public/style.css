@@ -13,6 +13,7 @@
 }
 html,
 body {
+  touch-action: pan-y;
   width: 100%;
   overflow-x: hidden;
   overscroll-behavior-x: none;

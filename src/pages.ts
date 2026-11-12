@@ -8,10 +8,11 @@ const escape = (text: unknown) => String(text).replace(/[&<>"']/g, character => 
 
 function shell(title: string, body: string) {
   return `<!doctype html><html lang="en"><head>
-    <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no">
     <meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#a88b72">
     <title>${escape(title)}</title><link rel="stylesheet" href="/certificate.css">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <script src="/zoom.js" defer></script>
     <script src="/certificate.js" defer></script>
     </head><body>${body}</body></html>`;
 }

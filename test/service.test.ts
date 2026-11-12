@@ -147,7 +147,7 @@ test('cookie service with a real local libSQL database', async t => {
       const html = await (await fetch(base + '/')).text();
       assert.match(html, /apple-touch-icon\.png/);
       assert.match(html, /Certificate/);
-      for (const asset of ['/app.js', '/style.css', '/certificate.css', '/certificate.js']) {
+      for (const asset of ['/app.js', '/style.css', '/certificate.css', '/certificate.js', '/zoom.js']) {
         assert.equal((await fetch(base + asset)).status, 200);
       }
     });
