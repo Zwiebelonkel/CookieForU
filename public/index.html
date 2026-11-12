@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#a88b72">
+  <meta name="description" content="One unique cookie. Only for you.">
+  <!-- Empty = same origin (Render). For GitHub Pages, enter your Render HTTPS origin. -->
+  <meta name="cookie-api" content="">
+  <title>A cookie for you</title>
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png?v=3">
+  <link rel="icon" type="image/png" href="./apple-touch-icon.png?v=3">
+  <meta name="apple-mobile-web-app-title" content="My Cookie">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="stylesheet" href="./style.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <main aria-label="A cookie just for you">
+    <div class="cookie" id="cookie" role="img" aria-label="Cookie">
+      <div class="cookie-spin"><span class="cookie-face" id="cookie-face" data-bites="0" aria-hidden="true">🍪</span></div>
+    </div>
+    <output class="id" id="cookie-id" aria-label="Remaining cookie hash" aria-live="polite"></output>
+    <div class="rarity" id="rarity"></div>
+    <p class="message" id="message">This cookie is only supposed to be for you.</p>
+    <div class="actions">
+      <button id="eat" type="button" disabled>Eat cookie</button>
+      <button id="share" type="button" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m-4 4 4-4 4 4"/><path d="M5 13v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7"/></svg>
+        Share
+      </button>
+      <a id="certificate" hidden target="_blank" rel="noopener noreferrer">Certificate</a>
+      <button id="retry" type="button" hidden>Try again</button>
+    </div>
+    <div class="status" id="status" role="status">Baking your cookie…</div>
+    <noscript><p>Enable JavaScript to receive your cookie.</p></noscript>
+  </main>
+</body>
+</html>

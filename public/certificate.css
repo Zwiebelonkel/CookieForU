@@ -1,0 +1,45 @@
+* { box-sizing: border-box; }
+body { margin: 0; background: #a88b72; color: #37291e; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; padding: 40px 20px; }
+.paper { max-width: 750px; margin: 0 auto; padding: 48px; border: 1px solid #e4d7c5; background: #fffaf2; box-shadow: 0 18px 60px #30201218; }
+.symbol { font-size: 48px; text-align: center; }
+.eyebrow { text-align: center; font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: #806c59; margin-top: 20px; }
+h1 { font-family: Georgia, serif; font-size: clamp(30px, 6vw, 45px); font-weight: normal; text-align: center; margin: 15px 0; }
+.subtitle { text-align: center; color: #806c59; font-size: 14px; }
+.rarity { text-transform: uppercase; text-align: center; font-size: 18px; letter-spacing: .22em; margin: 30px 0 10px; }
+.probability { text-align: center; font-size: 11px; color: #806c59; }
+dl { margin: 32px 0; }
+dl div { border-top: 1px solid #e8ddcd; padding: 12px 0; }
+dt { color: #806c59; font-size: 11px; margin-bottom: 5px; }
+dd { margin: 0; font-size: 13px; line-height: 1.7; }
+.hash { font-family: ui-monospace, Consolas, monospace; overflow-wrap: anywhere; }
+.verification { display: flex; align-items: center; gap: 22px; border-top: 1px solid #e8ddcd; padding-top: 20px; }
+.verification img { flex: 0 0 140px; width: 140px; height: 140px; }
+.verification strong { font-size: 13px; }
+.verification p, .verification a { font-size: 11px; line-height: 1.6; }
+.verification-url { overflow-wrap: anywhere; }
+a { color: inherit; }
+.note { font-size: 10px; line-height: 1.7; color: #806c59; margin-top: 24px; }
+.actions { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-top: 28px; }
+.actions button { border: 0; background: #49372a; color: #fffaf2; padding: 12px 16px; border-radius: 6px; cursor: pointer; font: inherit; font-size: 12px; }
+.actions a { font-size: 12px; }
+@media (max-width: 500px) { body { padding: 16px; } .paper { padding: 24px; } .verification { flex-direction: column; align-items: flex-start; } }
+@page { size: A4; margin: 15mm; }
+@media print {
+  body { background: white; padding: 0; color: #241b14; }
+  .paper { max-width: none; box-shadow: none; border: 1px solid #baa78f; padding: 10mm; }
+  .actions { display: none; }
+  .verification { flex-direction: row; align-items: center; break-inside: avoid; }
+  .verification img { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  dl div { break-inside: avoid; }
+  .symbol { font-size: 36px; }
+  h1 { font-size: 32px; margin: 10px 0; }
+  .eyebrow { margin-top: 12px; }
+  .rarity { margin: 18px 0 8px; }
+  .probability { margin: 8px 0; }
+  dl { margin: 20px 0; }
+  dl div { padding: 8px 0; }
+  dd { font-size: 12px; line-height: 1.5; }
+  .verification img { flex-basis: 110px; width: 110px; height: 110px; }
+  .note { font-size: 9px; line-height: 1.5; margin-top: 14px; }
+  a { text-decoration: none; }
+}
