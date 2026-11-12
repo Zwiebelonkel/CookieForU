@@ -11,15 +11,28 @@
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
 }
+html,
+body {
+  width: 100%;
+  overflow-x: hidden;
+}
+@supports (overflow-x: clip) {
+  html,
+  body {
+    overflow-x: clip;
+  }
+}
 body {
   margin: 0;
   min-height: 100vh;
   min-height: 100svh;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   place-items: center;
   background: radial-gradient(ellipse at center, #b39980, #a88b72);
 }
 main {
+  min-width: 0;
   width: 100%;
   padding: 40px 20px;
   padding-top: max(40px, env(safe-area-inset-top));
@@ -27,6 +40,7 @@ main {
   text-align: center;
 }
 .cookie {
+  position: relative;
   width: fit-content;
   margin: 0 auto 38px;
   line-height: 1;
@@ -44,41 +58,56 @@ main {
   font-family:
     "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
   font-size: 104px;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
   transition:
     opacity 500ms,
     transform 500ms;
 }
 .cookie-face[data-bites="1"] {
-  -webkit-mask-image: radial-gradient(
-    circle 26px at 94% 30%,
-    transparent 98%,
-    black 100%
-  );
-  mask-image: radial-gradient(
-    circle 26px at 94% 30%,
-    transparent 98%,
-    black 100%
-  );
+  -webkit-mask-image: url("./bite-1.svg");
+  mask-image: url("./bite-1.svg");
 }
-.cookie-face[data-bites="2"] {
-  -webkit-mask-image: radial-gradient(
-    circle 51px at 88% 35%,
-    transparent 98%,
-    black 100%
-  );
-  mask-image: radial-gradient(
-    circle 51px at 88% 35%,
-    transparent 98%,
-    black 100%
-  );
+.delivery-ghost {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.cookie-face[data-bites="2"],
+.cookie-face[data-bites="3"] {
+  -webkit-mask-image: url("./bite-2.svg");
+  mask-image: url("./bite-2.svg");
 }
 .cookie-face[data-bites="3"] {
+  visibility: hidden;
   opacity: 0;
-  transform: scale(0.65);
+  transition: none;
 }
 .cookie.eaten,
 .cookie.eaten .cookie-spin {
   animation-play-state: paused;
+}
+.crumb-layer {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 2;
+}
+.crumb-field {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+.cookie-crumb {
+  position: absolute;
+  left: 0;
+  top: 0;
+  border-radius: 30% 45% 25% 35%;
+  clip-path: polygon(12% 5%, 74% 0, 100% 37%, 82% 86%, 35% 100%, 0 65%);
+  box-shadow: inset 1px 1px 1px #ffe1a980, inset -1px -1px 1px #49301d50;
 }
 .id {
   display: block;
@@ -91,6 +120,7 @@ main {
   line-height: 2;
   letter-spacing: 0.08em;
   overflow-wrap: anywhere;
+  word-break: break-all;
   user-select: all;
 }
 mark {
@@ -170,12 +200,18 @@ button,
   -webkit-tap-highlight-color: transparent;
   transition:
     opacity 200ms,
-    background 200ms;
+    background 200ms,
+    transform 200ms;
 }
 button:hover:not(:disabled),
 .actions a:hover {
   opacity: 1;
   background: #49372a0c;
+  transform: translateY(-2px);
+}
+button:active:not(:disabled),
+.actions a:active {
+  transform: translateY(0) scale(0.96);
 }
 button:focus-visible,
 .actions a:focus-visible {
@@ -188,6 +224,7 @@ button:disabled {
   cursor: default;
 }
 button svg {
+  transition: transform 200ms ease;
   width: 16px;
   height: 16px;
   fill: none;
@@ -195,6 +232,9 @@ button svg {
   stroke-width: 1.5;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+button:hover:not(:disabled) svg {
+  transform: translateY(-2px);
 }
 .status {
   min-height: 36px;
@@ -245,7 +285,16 @@ button svg {
     animation: none;
   }
   .cookie-face,
-  button {
+  button,
+  button svg,
+  .actions a {
     transition: none;
+  }
+  button:hover:not(:disabled),
+  button:active:not(:disabled),
+  button:hover:not(:disabled) svg,
+  .actions a:hover,
+  .actions a:active {
+    transform: none;
   }
 }

@@ -23,6 +23,126 @@
   let generation = 0;
   let deliveryPending = true;
 
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const activeTransitions = new WeakMap();
+  let lastRenderedCookie = null;
+
+  const crumbLayer = document.createElement("div");
+  crumbLayer.className = "crumb-layer";
+  crumbLayer.setAttribute("aria-hidden", "true");
+  const crumbField = document.createElement("div");
+  crumbField.className = "crumb-field";
+  crumbLayer.append(crumbField);
+  document.body.append(crumbLayer);
+
+  function positionCrumbs() {
+    const bounds = $("cookie").getBoundingClientRect();
+    const center = {
+      x: bounds.left + bounds.width / 2,
+      y: bounds.top + bounds.height / 2,
+    };
+    crumbField.style.left = `${center.x}px`;
+    crumbField.style.top = `${center.y}px`;
+    return center;
+  }
+
+  window.addEventListener("resize", positionCrumbs);
+  window.addEventListener("scroll", positionCrumbs, { passive: true });
+
+  function scatterCrumbs(bites) {
+    const center = positionCrumbs();
+    const face = $("cookie-face");
+    const count = bites === 3 ? 32 : 20;
+    const palette = ["#dca25c", "#be7d38", "#edbc79", "#a56a32", "#593422"];
+    // Start at the bitten edge, including the cookie's current rotation.
+    const transform = new DOMMatrix(getComputedStyle($("cookie")).transform)
+      .multiply(new DOMMatrix(getComputedStyle(face.parentElement).transform));
+    const bitePoint = bites === 1 ? [0.18, -0.22] : bites === 2 ? [-0.08, 0.18] : [-0.25, 0];
+    const localX = bitePoint[0] * face.offsetWidth;
+    const localY = bitePoint[1] * face.offsetHeight;
+    const startX = transform.a * localX + transform.c * localY;
+    const startY = transform.b * localX + transform.d * localY;
+
+    for (let i = 0; i < count; i++) {
+      const crumb = document.createElement("span");
+      crumb.className = "cookie-crumb";
+      const size = 2 + Math.random() * 5;
+      const angle = Math.random() * Math.PI * 2;
+      const distance = 66 + Math.random() * 75;
+      const x = Math.max(6 - center.x, Math.min(innerWidth - center.x - 10, Math.cos(angle) * distance));
+      const y = Math.max(6 - center.y, Math.min(innerHeight - center.y - 10, Math.sin(angle) * distance * 0.8));
+      const rotation = Math.random() * 360;
+      const finalTransform = `translate(${x}px, ${y}px) rotate(${rotation}deg)`;
+
+      crumb.style.width = `${size}px`;
+      crumb.style.height = `${size * (0.65 + Math.random() * 0.5)}px`;
+      crumb.style.background = palette[Math.floor(Math.random() * palette.length)];
+      crumb.style.transform = finalTransform;
+      crumbField.append(crumb);
+
+      if (!reducedMotion.matches) {
+        const flight = crumb.animate(
+          [
+            { opacity: 0, transform: `translate(${startX}px, ${startY}px) rotate(0deg)`, offset: 0 },
+            { opacity: 1, offset: 0.08 },
+            { transform: `translate(${startX + (x - startX) * 0.65}px, ${startY + (y - startY) * 0.65 - 18}px) rotate(${rotation * 0.65}deg)`, offset: 0.5 },
+            { transform: `translate(${x * 1.04}px, ${y * 1.04}px) rotate(${rotation + 8}deg)`, offset: 0.85 },
+            { opacity: 1, transform: finalTransform, offset: 1 },
+          ],
+          { duration: 450 + Math.random() * 300, easing: "cubic-bezier(0.2, 0.65, 0.3, 1)" },
+        );
+        // The resting position is regular CSS; no running animation is needed.
+        flight.onfinish = () => flight.cancel();
+      }
+    }
+
+    // Keep decoration bounded even when several cookies are eaten in one tab.
+    while (crumbField.childElementCount > 160) {
+      const oldest = crumbField.firstElementChild;
+      oldest.getAnimations().forEach((animation) => animation.cancel());
+      oldest.remove();
+    }
+  }
+
+  function animateIn(element, delay = 0, icon = false) {
+    activeTransitions.get(element)?.cancel();
+    if (reducedMotion.matches || element.hidden) return;
+
+    const animation = element.animate(
+      [
+        {
+          opacity: 0,
+          transform: icon ? "translateY(12px) scale(0.78)" : "translateY(7px)",
+        },
+        { opacity: getComputedStyle(element).opacity, transform: "none" },
+      ],
+      {
+        duration: icon ? 520 : 360,
+        delay,
+        easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+        fill: "backwards",
+      },
+    );
+    activeTransitions.set(element, animation);
+  }
+
+  // Only animate actual text changes, so background refreshes stay quiet.
+  const textElements = [output, $("rarity"), $("message"), status, eat];
+  const previousText = new WeakMap(
+    textElements.map((element) => [element, element.textContent]),
+  );
+  const textObserver = new MutationObserver(() => {
+    for (const element of textElements) {
+      const text = element.textContent;
+      if (text === previousText.get(element)) continue;
+      previousText.set(element, text);
+      if (text.trim()) animateIn(element);
+    }
+  });
+  for (const element of textElements) {
+    textObserver.observe(element, { childList: true, characterData: true, subtree: true });
+  }
+
   function readToken(id) {
     try {
       return localStorage.getItem("cookie-owner:" + id);
@@ -101,6 +221,55 @@
   }
 
   function render() {
+    const cookieElement = $("cookie");
+    const face = $("cookie-face");
+    const wasDelivering = cookieElement.classList.contains("delivering");
+    const changed = wasDelivering !== deliveryPending;
+    const sameCookie = cookie && lastRenderedCookie?.id === cookie.id;
+    const bitten = !deliveryPending && sameCookie && cookie.bites > lastRenderedCookie.bites;
+    let departingIcon;
+
+    if (bitten) scatterCrumbs(cookie.bites);
+
+    if (changed || bitten || (!deliveryPending && cookie?.bites === 3)) {
+      activeTransitions.get(face)?.cancel();
+    }
+
+    if (changed && face.dataset.bites !== "3" && !reducedMotion.matches) {
+      departingIcon = document.createElement("span");
+      departingIcon.className = "cookie-face delivery-ghost";
+      departingIcon.textContent = face.textContent;
+      departingIcon.dataset.bites = face.dataset.bites;
+      departingIcon.setAttribute("aria-hidden", "true");
+      cookieElement.append(departingIcon);
+    }
+
+    renderContent();
+
+    if (!deliveryPending && cookie) {
+      lastRenderedCookie = { id: cookie.id, bites: cookie.bites };
+    }
+
+    if (!changed) return;
+    if (departingIcon) {
+      const exit = departingIcon.animate(
+        [
+          { opacity: 1, transform: "translateX(0)" },
+          { opacity: 0, transform: "translateX(-70px)" },
+        ],
+        { duration: 260, easing: "ease-in", fill: "forwards" },
+      );
+      exit.onfinish = exit.oncancel = () => departingIcon.remove();
+    }
+    if ($("cookie-face").dataset.bites !== "3") {
+      animateIn($("cookie-face"), 140, true);
+    }
+    document.querySelectorAll(".actions > *:not([hidden])").forEach((element, index) => {
+      animateIn(element, 120 + index * 65);
+    });
+  }
+
+  function renderContent() {
     const face = $("cookie-face");
     const cookieElement = $("cookie");
 

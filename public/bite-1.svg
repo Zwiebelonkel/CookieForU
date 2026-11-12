@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+  <defs>
+    <mask id="bite" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
+      <path fill="white" d="M0 0h100v100H0z"/>
+      <g fill="black">
+        <ellipse cx="93" cy="25" rx="35" ry="28"/>
+        <circle cx="77" cy="0" r="11"/>
+        <circle cx="65" cy="11" r="10"/>
+        <circle cx="58" cy="25" r="10"/>
+        <circle cx="62" cy="39" r="10"/>
+        <circle cx="72" cy="49" r="10"/>
+        <circle cx="86" cy="52" r="10"/>
+        <circle cx="99" cy="49" r="10"/>
+      </g>
+    </mask>
+  </defs>
+  <path fill="white" mask="url(#bite)" d="M0 0h100v100H0z"/>
+</svg>
