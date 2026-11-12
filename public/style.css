@@ -46,6 +46,10 @@ main {
   text-align: center;
 }
 .cookie {
+  --spin-duration: 60s;
+  --pulse-duration: 3.8s;
+  --float-height: -5px;
+  --pulse-scale: 1.045;
   position: relative;
   width: fit-content;
   margin: 0 auto 38px;
@@ -54,10 +58,69 @@ main {
   filter:
     drop-shadow(0 3px 2px #38251940)
     drop-shadow(0 12px 10px #38251955);
-  animation: pulse 3.8s ease-in-out infinite;
+  animation: pulse var(--pulse-duration) ease-in-out infinite;
 }
 .cookie-spin {
-  animation: rotate 90s linear infinite;
+  animation: rotate var(--spin-duration) linear infinite;
+}
+/* Filter the masked face's parent so the outline follows every bitten edge. */
+.cookie[data-rarity] .cookie-spin {
+  filter:
+    drop-shadow(var(--outline-width) 0 0 var(--outline-color))
+    drop-shadow(calc(-1 * var(--outline-width)) 0 0 var(--outline-color))
+    drop-shadow(0 var(--outline-width) 0 var(--outline-color))
+    drop-shadow(0 calc(-1 * var(--outline-width)) 0 var(--outline-color))
+    drop-shadow(0 0 var(--outline-glow) var(--outline-color));
+}
+.cookie[data-rarity="common"], .rarity-stars[data-level="common"] {
+  --outline-color: #e1bc8b;
+  --outline-width: .6px;
+  --outline-glow: 0px;
+}
+.cookie[data-rarity="uncommon"], .rarity-stars[data-level="uncommon"] {
+  --outline-color: #b6d58a;
+  --outline-width: 1px;
+  --outline-glow: 3px;
+  --spin-duration: 44s;
+  --pulse-duration: 3.5s;
+  --float-height: -6px;
+  --pulse-scale: 1.055;
+}
+.cookie[data-rarity="rare"], .rarity-stars[data-level="rare"] {
+  --outline-color: #8ad8f5;
+  --outline-width: 1.4px;
+  --outline-glow: 5px;
+  --spin-duration: 30s;
+  --pulse-duration: 3.2s;
+  --float-height: -7px;
+  --pulse-scale: 1.07;
+}
+.cookie[data-rarity="epic"], .rarity-stars[data-level="epic"] {
+  --outline-color: #d7a1ff;
+  --outline-width: 1.8px;
+  --outline-glow: 7px;
+  --spin-duration: 21s;
+  --pulse-duration: 2.9s;
+  --float-height: -8px;
+  --pulse-scale: 1.085;
+}
+.cookie[data-rarity="legendary"], .rarity-stars[data-level="legendary"] {
+  --outline-color: #ffda78;
+  --outline-width: 2.2px;
+  --outline-glow: 10px;
+  --spin-duration: 14s;
+  --pulse-duration: 2.6s;
+  --float-height: -10px;
+  --pulse-scale: 1.1;
+}
+.cookie[data-rarity="mythic"], .rarity-stars[data-level="mythic"] {
+  --outline-color: #ff9db9;
+  --outline-width: 2.6px;
+  --outline-glow: 13px;
+  --spin-duration: 9s;
+  --pulse-duration: 2.3s;
+  --float-height: -12px;
+  --pulse-scale: 1.12;
 }
 .cookie-face {
   display: block;
@@ -165,6 +228,15 @@ mark[data-level="mythic"] {
   letter-spacing: 0.2em;
   text-transform: uppercase;
   opacity: 0.65;
+}
+.rarity-stars {
+  margin-top: 5px;
+  color: var(--outline-color);
+  font-size: 13px;
+  line-height: 1.4;
+  letter-spacing: .18em;
+  text-indent: .18em;
+  text-shadow: 0 1px 2px #49372a70, 0 0 var(--outline-glow) var(--outline-color);
 }
 .rarity[data-level="rare"],
 .rarity[data-level="epic"],
@@ -378,7 +450,7 @@ button:hover:not(:disabled) svg {
     transform: translateY(0) scale(1);
   }
   50% {
-    transform: translateY(-5px) scale(1.045);
+    transform: translateY(var(--float-height)) scale(var(--pulse-scale));
   }
 }
 @keyframes rotate {

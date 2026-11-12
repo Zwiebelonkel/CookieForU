@@ -8,6 +8,11 @@ HTML-Frontend und druckbaren Zertifikaten. Kein Sites-Projekt.
 - Kryptografisch zufällige 64-stellige IDs, ausschließlich vom Server erzeugt.
 - Unverändertes Original und Raritätsregel v1 dauerhaft in Turso.
 - Kaffeebraune Website mit pulsierendem, langsam rotierendem Cookie.
+- Raritätsabhängige Kontur und Leuchten am Cookie, auch an Bisskanten.
+  Seltenere Cookies schweben und pulsieren stärker und drehen sich schneller
+  (60 Sekunden pro Umdrehung bei Common bis 9 Sekunden bei Mythic).
+  Passende Sterne unter der Rarität: Common 1, Uncommon 2, Rare 3, Epic 4,
+  Legendary 5, Mythic 6. Reduzierte Bewegung schaltet die Animationen aus.
 - Hervorgehobene Zeichenserien, Rarität, Apple-Touch-Icon.
 - Drei Bisse: angezeigter Hash wird 64 → 42 → 21 → 0 Zeichen lang.
 - Öffentliche Teilen-Links; Essen nur mit separatem Besitzer-Token.

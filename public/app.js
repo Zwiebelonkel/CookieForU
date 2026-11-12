@@ -325,6 +325,8 @@
     if (cookie) verifyOwner.href = cookie.verificationUrl;
 
     if (deliveryPending) {
+      delete cookieElement.dataset.rarity;
+      $("rarity-stars").hidden = true;
       face.textContent = "🚚";
       face.dataset.bites = "0";
 
@@ -359,6 +361,8 @@
     certificate.disabled = busy;
 
     if (!cookie) {
+      delete cookieElement.dataset.rarity;
+      $("rarity-stars").hidden = true;
       output.textContent = "";
       $("rarity").textContent = "";
 
@@ -388,6 +392,7 @@
 
     const gone = cookie.bites === 3;
 
+    cookieElement.dataset.rarity = cookie.rarity;
     face.dataset.bites = String(cookie.bites);
     cookieElement.classList.toggle("eaten", gone);
 
@@ -400,6 +405,13 @@
 
     $("rarity").textContent = gone ? "" : cookie.rarity;
     $("rarity").dataset.level = gone ? "" : cookie.rarity;
+
+    const starCount = ["common", "uncommon", "rare", "epic", "legendary", "mythic"].indexOf(cookie.rarity) + 1;
+    const stars = $("rarity-stars");
+    stars.hidden = gone || starCount === 0;
+    stars.dataset.level = cookie.rarity;
+    stars.textContent = "★".repeat(starCount);
+    stars.setAttribute("aria-label", `${cookie.rarity}: ${starCount} of 6 stars`);
 
     $("rarity").title = gone
       ? ""
