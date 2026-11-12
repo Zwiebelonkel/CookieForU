@@ -1,32 +1,238 @@
-* { box-sizing: border-box; }
-[hidden] { display: none !important; }
-:root { color-scheme: light; background: #a88b72; color: #49372a; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
-body { margin: 0; min-height: 100vh; min-height: 100svh; display: grid; place-items: center; background: radial-gradient(ellipse at center, #b39980, #a88b72); }
-main { width: 100%; padding: 40px 20px; padding-top: max(40px, env(safe-area-inset-top)); padding-bottom: max(40px, env(safe-area-inset-bottom)); text-align: center; }
-.cookie { width: fit-content; margin: 0 auto 38px; line-height: 1; user-select: none; filter: drop-shadow(0 8px 12px #49372a20); animation: pulse 3.8s ease-in-out infinite; }
-.cookie-spin { animation: rotate 90s linear infinite; }
-.cookie-face { display: block; font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; font-size: 104px; transition: opacity 500ms, transform 500ms; }
-.cookie-face[data-bites="1"] { -webkit-mask-image: radial-gradient(circle 26px at 94% 30%, transparent 98%, black 100%); mask-image: radial-gradient(circle 26px at 94% 30%, transparent 98%, black 100%); }
-.cookie-face[data-bites="2"] { -webkit-mask-image: radial-gradient(circle 51px at 88% 35%, transparent 98%, black 100%); mask-image: radial-gradient(circle 51px at 88% 35%, transparent 98%, black 100%); }
-.cookie-face[data-bites="3"] { opacity: 0; transform: scale(.65); }
-.cookie.eaten, .cookie.eaten .cookie-spin { animation-play-state: paused; }
-.id { display: block; width: min(100%, 38ch); min-height: 4em; margin: 0 auto; color: #594333; font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size: clamp(9px, 2.6vw, 12px); line-height: 2; letter-spacing: .08em; overflow-wrap: anywhere; user-select: all; }
-mark { padding: 2px 0; border-radius: 3px; background: #65452b24; color: #392719; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
-mark[data-level="uncommon"] { background: #f9d89855; color: #50320f; }
-mark[data-level="rare"] { background: #ffe2a477; color: #54310a; text-shadow: 0 0 10px #ffdb9655; }
-mark[data-level="epic"] { background: #fce6b899; color: #47270a; text-shadow: 0 0 14px #ffdc9a99; }
-mark[data-level="legendary"], mark[data-level="mythic"] { background: #fff0c5; color: #57330b; text-shadow: 0 0 18px #fff0c5; box-shadow: 0 0 16px #ffe7a555; }
-.rarity { min-height: 18px; margin-top: 13px; font-size: 9px; letter-spacing: .2em; text-transform: uppercase; opacity: .65; }
-.rarity[data-level="rare"], .rarity[data-level="epic"], .rarity[data-level="legendary"], .rarity[data-level="mythic"] { color: #fff0ce; opacity: 1; }
-.message { margin: 24px 0 0; font-size: clamp(11px, 3vw, 14px); line-height: 1.6; }
-.actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 2px; margin-top: 20px; }
-button, .actions a { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 8px 12px; border: 0; border-radius: 8px; background: transparent; color: inherit; font: inherit; font-size: 12px; cursor: pointer; opacity: .7; text-decoration: none; touch-action: manipulation; -webkit-tap-highlight-color: transparent; transition: opacity 200ms, background 200ms; }
-button:hover:not(:disabled), .actions a:hover { opacity: 1; background: #49372a0c; }
-button:focus-visible, .actions a:focus-visible { outline: 2px solid #49372a; outline-offset: 3px; opacity: 1; }
-button:disabled { opacity: .3; cursor: default; }
-button svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-.status { min-height: 36px; max-width: 320px; margin: 4px auto 0; font-size: 11px; line-height: 1.6; opacity: .75; }
-::selection { background: #73513b40; }
-@keyframes pulse { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-5px) scale(1.045); } }
-@keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .cookie, .cookie-spin { animation: none; } .cookie-face, button { transition: none; } }
+* {
+  box-sizing: border-box;
+}
+[hidden] {
+  display: none !important;
+}
+:root {
+  color-scheme: light;
+  background: #a88b72;
+  color: #49372a;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(ellipse at center, #b39980, #a88b72);
+}
+main {
+  width: 100%;
+  padding: 40px 20px;
+  padding-top: max(40px, env(safe-area-inset-top));
+  padding-bottom: max(40px, env(safe-area-inset-bottom));
+  text-align: center;
+}
+.cookie {
+  width: fit-content;
+  margin: 0 auto 38px;
+  line-height: 1;
+  user-select: none;
+  filter: drop-shadow(0 8px 12px #49372a20);
+  animation: pulse 3.8s ease-in-out infinite;
+}
+.cookie-spin {
+  animation: rotate 90s linear infinite;
+}
+.cookie-face {
+  display: block;
+  font-family:
+    "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  font-size: 104px;
+  transition:
+    opacity 500ms,
+    transform 500ms;
+}
+.cookie-face[data-bites="1"] {
+  -webkit-mask-image: radial-gradient(
+    circle 26px at 94% 30%,
+    transparent 98%,
+    black 100%
+  );
+  mask-image: radial-gradient(
+    circle 26px at 94% 30%,
+    transparent 98%,
+    black 100%
+  );
+}
+.cookie-face[data-bites="2"] {
+  -webkit-mask-image: radial-gradient(
+    circle 51px at 88% 35%,
+    transparent 98%,
+    black 100%
+  );
+  mask-image: radial-gradient(
+    circle 51px at 88% 35%,
+    transparent 98%,
+    black 100%
+  );
+}
+.cookie-face[data-bites="3"] {
+  opacity: 0;
+  transform: scale(0.65);
+}
+.cookie.eaten,
+.cookie.eaten .cookie-spin {
+  animation-play-state: paused;
+}
+.id {
+  display: block;
+  width: min(100%, 38ch);
+  min-height: 4em;
+  margin: 0 auto;
+  color: #594333;
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: clamp(9px, 2.6vw, 12px);
+  line-height: 2;
+  letter-spacing: 0.08em;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+mark {
+  padding: 2px 0;
+  border-radius: 3px;
+  background: #65452b24;
+  color: #392719;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+mark[data-level="uncommon"] {
+  background: #f9d89855;
+  color: #50320f;
+}
+mark[data-level="rare"] {
+  background: #ffe2a477;
+  color: #54310a;
+  text-shadow: 0 0 10px #ffdb9655;
+}
+mark[data-level="epic"] {
+  background: #fce6b899;
+  color: #47270a;
+  text-shadow: 0 0 14px #ffdc9a99;
+}
+mark[data-level="legendary"],
+mark[data-level="mythic"] {
+  background: #fff0c5;
+  color: #57330b;
+  text-shadow: 0 0 18px #fff0c5;
+  box-shadow: 0 0 16px #ffe7a555;
+}
+.rarity {
+  min-height: 18px;
+  margin-top: 13px;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+.rarity[data-level="rare"],
+.rarity[data-level="epic"],
+.rarity[data-level="legendary"],
+.rarity[data-level="mythic"] {
+  color: #fff0ce;
+  opacity: 1;
+}
+.message {
+  margin: 24px 0 0;
+  font-size: clamp(11px, 3vw, 14px);
+  line-height: 1.6;
+}
+.actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-top: 20px;
+}
+button,
+.actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0.7;
+  text-decoration: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    opacity 200ms,
+    background 200ms;
+}
+button:hover:not(:disabled),
+.actions a:hover {
+  opacity: 1;
+  background: #49372a0c;
+}
+button:focus-visible,
+.actions a:focus-visible {
+  outline: 2px solid #49372a;
+  outline-offset: 3px;
+  opacity: 1;
+}
+button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+button svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.status {
+  min-height: 36px;
+  max-width: 320px;
+  margin: 4px auto 0;
+  font-size: 11px;
+  line-height: 1.6;
+  opacity: 0.75;
+}
+::selection {
+  background: #73513b40;
+}
+/* Keep the delivery truck upright. */
+.cookie.delivering .cookie-spin {
+  animation: none;
+}
+@keyframes pulse {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-5px) scale(1.045);
+  }
+}
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cookie,
+  .cookie-spin {
+    animation: none;
+  }
+  .cookie-face,
+  button {
+    transition: none;
+  }
+}
