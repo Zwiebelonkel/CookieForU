@@ -33,26 +33,82 @@
     }
 
     .cookie {
-      margin-bottom: 38px;
-      font-size: 104px;
+      width: fit-content;
+      margin: 0 auto 38px;
       line-height: 1;
       user-select: none;
       filter: drop-shadow(0 8px 12px #49372a20);
       animation: pulse 3.8s ease-in-out infinite;
     }
 
-    .id {
+    .cookie span {
       display: block;
-      font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
-      font-size: clamp(9px, 2.6vw, 12px);
-      line-height: 1.9;
-      letter-spacing: 0.08em;
-      opacity: 0.8;
-      user-select: all;
+      font-size: 104px;
+      animation: rotate 90s linear infinite;
     }
 
-    .id span {
+    .id {
       display: block;
+      width: min(100%, 38ch);
+      margin: 0 auto;
+      font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+      font-size: clamp(9px, 2.6vw, 12px);
+      line-height: 2;
+      letter-spacing: 0.08em;
+      overflow-wrap: anywhere;
+      user-select: all;
+      color: #594333;
+    }
+
+    mark {
+      padding: 2px 0;
+      border-radius: 3px;
+      background: #65452b24;
+      color: #392719;
+      box-decoration-break: clone;
+      -webkit-box-decoration-break: clone;
+    }
+
+    mark[data-level="uncommon"] {
+      background: #f9d89855;
+      color: #50320f;
+    }
+
+    mark[data-level="rare"] {
+      background: #ffe2a477;
+      color: #54310a;
+      text-shadow: 0 0 10px #ffdb9655;
+    }
+
+    mark[data-level="epic"] {
+      background: #fce6b899;
+      color: #47270a;
+      text-shadow: 0 0 14px #ffdc9a99;
+    }
+
+    mark[data-level="legendary"],
+    mark[data-level="mythic"] {
+      background: #fff0c5;
+      color: #57330b;
+      text-shadow: 0 0 18px #fff0c5;
+      box-shadow: 0 0 16px #ffe7a555;
+    }
+
+    .rarity {
+      min-height: 18px;
+      margin-top: 13px;
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      opacity: 0.65;
+    }
+
+    .rarity[data-level="rare"],
+    .rarity[data-level="epic"],
+    .rarity[data-level="legendary"],
+    .rarity[data-level="mythic"] {
+      color: #fff0ce;
+      opacity: 1;
     }
 
     p {
@@ -74,8 +130,18 @@
       }
     }
 
+    @keyframes rotate {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
     @media (prefers-reduced-motion: reduce) {
-      .cookie {
+      .cookie,
+      .cookie span {
         animation: none;
       }
     }
@@ -84,7 +150,9 @@
 
 <body>
   <main aria-label="A cookie just for you">
-    <div class="cookie" role="img" aria-label="Cookie">🍪</div>
+    <div class="cookie" role="img" aria-label="Cookie">
+      <span aria-hidden="true">🍪</span>
+    </div>
 
     <output
       class="id"
@@ -92,6 +160,8 @@
       aria-label="Your unique cookie ID"
       aria-live="polite"
     ></output>
+
+    <div class="rarity" id="rarity" aria-live="polite"></div>
 
     <p>This cookie is only supposed to be for you.</p>
 
@@ -101,45 +171,86 @@
   </main>
 
   <script>
+    const output = document.getElementById("cookie-id");
+    const rarityLabel = document.getElementById("rarity");
+    let generation = 0;
+
+    // Visual rarity tiers, based on the longest repeated sequence.
+    function getRarity(length) {
+      if (length >= 7) return "mythic";
+      if (length >= 6) return "legendary";
+      if (length >= 5) return "epic";
+      if (length >= 4) return "rare";
+      if (length >= 3) return "uncommon";
+      return "common";
+    }
+
+    function displayHash(id) {
+      const fragment = document.createDocumentFragment();
+      const sequences = id.match(/(.)\1*/g) || [];
+      let longest = 1;
+
+      for (const sequence of sequences) {
+        longest = Math.max(longest, sequence.length);
+
+        if (sequence.length >= 2) {
+          const highlight = document.createElement("mark");
+
+          highlight.textContent = sequence;
+          highlight.dataset.level = getRarity(sequence.length);
+          highlight.title = `${sequence.length} identical characters in a row`;
+
+          fragment.appendChild(highlight);
+        } else {
+          fragment.appendChild(document.createTextNode(sequence));
+        }
+      }
+
+      output.replaceChildren(fragment);
+
+      const rarity = getRarity(longest);
+
+      rarityLabel.textContent = rarity;
+      rarityLabel.dataset.level = rarity;
+      rarityLabel.title =
+        `Longest sequence: ${longest} identical characters in a row`;
+    }
+
     async function createCookie() {
-      const output = document.getElementById("cookie-id");
+      const currentGeneration = ++generation;
 
       try {
-        // Cryptographically secure randomness for each visit.
         const random = crypto.getRandomValues(new Uint8Array(32));
 
-        // Create a SHA-256 hash when Web Crypto hashing is available.
         const bytes = crypto.subtle
           ? new Uint8Array(await crypto.subtle.digest("SHA-256", random))
           : random;
+
+        if (currentGeneration !== generation) return;
 
         const id = Array.from(bytes, byte =>
           byte.toString(16).padStart(2, "0")
         ).join("");
 
-        const lines = [id.slice(0, 32), id.slice(32)].map(text => {
-          const span = document.createElement("span");
-          span.textContent = text;
-          return span;
-        });
+        displayHash(id);
 
-        output.replaceChildren(...lines);
-
-        // Replace the browser cookie with the new ID on each visit.
         try {
           document.cookie =
             "your_cookie=" + id +
             "; Path=/; Max-Age=31536000; SameSite=Lax" +
             (location.protocol === "https:" ? "; Secure" : "");
         } catch {
-          // The ID still works if the browser blocks cookie storage.
+          // The displayed cookie works even if storage is blocked.
         }
       } catch {
+        if (currentGeneration !== generation) return;
+
         output.textContent = "Please reload to receive your cookie.";
+        rarityLabel.textContent = "";
       }
     }
 
-    // Also creates a new ID when returning via the back/forward cache.
+    // Includes returning through the browser's back/forward cache.
     window.addEventListener("pageshow", createCookie);
   </script>
 </body>
