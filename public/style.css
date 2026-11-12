@@ -31,7 +31,9 @@ main {
   margin: 0 auto 38px;
   line-height: 1;
   user-select: none;
-  filter: drop-shadow(0 8px 12px #49372a20);
+  filter:
+    drop-shadow(0 3px 2px #38251940)
+    drop-shadow(0 12px 10px #38251955);
   animation: pulse 3.8s ease-in-out infinite;
 }
 .cookie-spin {
