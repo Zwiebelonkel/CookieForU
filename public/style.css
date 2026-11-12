@@ -247,6 +247,32 @@ button:hover:not(:disabled) svg {
   line-height: 1.6;
   opacity: 0.75;
 }
+.owner-tools {
+  width: min(100%, 420px);
+  margin: 20px auto 0;
+  padding: 16px;
+  border: 1px solid #49372a30;
+  border-radius: 10px;
+  text-align: left;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.owner-tools summary { cursor: pointer; }
+.owner-tools p { color: #594333; }
+.owner-tools label { display: block; margin-bottom: 6px; }
+.owner-code-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.owner-code-row input {
+  min-width: 0;
+  flex: 1 1 200px;
+  width: 100%;
+  border: 1px solid #49372a50;
+  border-radius: 6px;
+  padding: 10px;
+  background: #fffaf260;
+  color: inherit;
+  font: 16px ui-monospace, Consolas, monospace;
+}
+.owner-code-row input:focus-visible { outline: 2px solid #49372a; outline-offset: 2px; }
 ::selection {
   background: #73513b40;
 }

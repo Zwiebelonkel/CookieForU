@@ -1,4 +1,4 @@
-import { randomBytes, createHash } from 'node:crypto';
+import { randomBytes, createHash, timingSafeEqual } from 'node:crypto';
 import type { Client, Row } from '@libsql/client';
 
 export const HEX_ID = /^[0-9a-f]{64}$/;
@@ -22,6 +22,10 @@ export function rarity(streak: number) {
 
 export function tokenHash(token: string) {
   return createHash('sha256').update(token, 'utf8').digest('hex');
+}
+
+export function ownsCookie(row: Row, ownerToken: string) {
+  return timingSafeEqual(Buffer.from(String(row.owner_token_hash), 'hex'), Buffer.from(tokenHash(ownerToken), 'hex'));
 }
 
 export function describe(row: Row, origin: string) {

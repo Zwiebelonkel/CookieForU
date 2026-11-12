@@ -1,8 +1,9 @@
 import express, { type Request, type Response, type NextFunction } from 'express';
 import type { Client } from '@libsql/client';
 import { fileURLToPath } from 'node:url';
-import { HEX_ID, describe, findCookie, issueCookie, takeBite } from './cookies.js';
+import { HEX_ID, describe, findCookie, issueCookie, ownsCookie, takeBite } from './cookies.js';
 import { certificatePage, notFoundPage } from './pages.js';
+import { CHECK_CODE, createCheck, findCheck, confirmCheck, describeCheck } from './owner-checks.js';
 
 interface Config { publicBaseUrl: string; corsOrigin?: string; rateLimits?: boolean }
 
@@ -19,7 +20,8 @@ export function createApp(db: Client, config: Config) {
       'Referrer-Policy': 'no-referrer',
       'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
     });
-    if (req.path.startsWith('/api/') || req.path.startsWith('/verify/')) {
+    const path = req.path.toLowerCase();
+    if (path.startsWith('/api/') || path.startsWith('/verify/')) {
       res.set('Cache-Control', 'no-store');
     }
     next();
@@ -49,11 +51,12 @@ export function createApp(db: Client, config: Config) {
     const now = Date.now();
     for (const [key, bucket] of buckets) if (bucket.expires <= now) buckets.delete(key);
     const issuing = req.method === 'POST' && req.path === '/cookies';
-    const key = `${req.ip}:${issuing ? 'issue' : 'other'}`;
+    const startingCheck = req.method === 'POST' && /^\/cookies\/[0-9a-f]{64}\/owner-checks\/?$/i.test(req.path);
+    const key = `${req.ip}:${issuing ? 'issue' : startingCheck ? 'owner-check' : 'other'}`;
     const bucket = buckets.get(key) ?? { count: 0, expires: now + 60_000 };
     bucket.count++;
     buckets.set(key, bucket);
-    if (bucket.count > (issuing ? 20 : 240)) {
+    if (bucket.count > (issuing ? 20 : startingCheck ? 10 : 240)) {
       res.set('Retry-After', String(Math.ceil((bucket.expires - now) / 1000)));
       res.status(429).json({ error: 'A little patience. Please try again shortly.' }); return;
     }
@@ -85,6 +88,58 @@ export function createApp(db: Client, config: Config) {
     res.json({ cookie: describe(row, origin) });
   });
 
+  const bearerToken = (req: Request) => /^Bearer ([0-9a-f]{64})$/.exec(req.get('authorization') ?? '')?.[1];
+  async function requireOwner(req: Request, res: Response) {
+    const id = String(req.params.id);
+    if (!HEX_ID.test(id)) { res.status(400).json({ error: 'Invalid cookie ID' }); return; }
+    const token = bearerToken(req);
+    if (!token) { res.status(401).json({ error: 'An owner token is required.' }); return; }
+    const row = await findCookie(db, id);
+    if (!row) { res.status(404).json({ error: 'Cookie not found.' }); return; }
+    if (!ownsCookie(row, token)) { res.status(403).json({ error: 'This Owner Pass does not belong to this cookie.' }); return; }
+    return { row, token, id };
+  }
+
+  // Verify imported/exported credentials without issuing a cookie or changing it.
+  app.get('/api/cookies/:id/owner', async (req, res) => {
+    const owner = await requireOwner(req, res);
+    if (owner) res.json({ cookie: describe(owner.row, origin) });
+  });
+
+  app.post('/api/cookies/:id/owner-checks', async (req, res) => {
+    const id = String(req.params.id);
+    if (!HEX_ID.test(id) || Object.keys(req.body ?? {}).length) {
+      res.status(400).json({ error: 'Send a valid cookie ID and an empty body.' }); return;
+    }
+    if (!await findCookie(db, id)) { res.status(404).json({ error: 'Cookie not found.' }); return; }
+    res.status(201).json(await createCheck(db, id));
+  });
+
+  app.get('/api/cookies/:id/owner-checks/:code', async (req, res) => {
+    const id = String(req.params.id), code = String(req.params.code);
+    if (!HEX_ID.test(id) || !CHECK_CODE.test(code)) { res.status(400).json({ error: 'Invalid owner check.' }); return; }
+    const token = bearerToken(req);
+    if (!token) { res.status(401).json({ error: 'The verifier token is required.' }); return; }
+    const row = await findCheck(db, id, code, token);
+    if (!row) { res.status(404).json({ error: 'This check is not available in this verification session.' }); return; }
+    res.json({ check: describeCheck(row) });
+  });
+
+  app.post('/api/cookies/:id/owner-checks/:code/confirm', async (req, res) => {
+    const owner = await requireOwner(req, res);
+    if (!owner) return;
+    const code = String(req.params.code);
+    if (!CHECK_CODE.test(code) || Object.keys(req.body ?? {}).length) {
+      res.status(400).json({ error: 'Enter the 16-character check code shown on the verifier’s device.' }); return;
+    }
+    const check = await findCheck(db, owner.id, code);
+    if (!check) { res.status(404).json({ error: 'No check with this code exists for this cookie.' }); return; }
+    if (Number(check.expires_at) <= Date.now()) { res.status(410).json({ error: 'This check has expired. Ask the verifier to start a new check.' }); return; }
+    const confirmed = await confirmCheck(db, owner.id, code, owner.token);
+    if (!confirmed) { res.status(409).json({ error: 'This code has already been used or has expired. Ask the verifier to check their own page.' }); return; }
+    res.json({ check: describeCheck(confirmed) });
+  });
+
   app.post('/api/cookies/:id/bite', async (req, res) => {
     const id = String(req.params.id);
     const authorization = req.get('authorization') ?? '';
@@ -108,7 +163,13 @@ export function createApp(db: Client, config: Config) {
     if (!HEX_ID.test(id)) { res.status(404).type('html').send(notFoundPage()); return; }
     const row = await findCookie(db, id);
     if (!row) { res.status(404).type('html').send(notFoundPage()); return; }
-    res.type('html').send(await certificatePage(describe(row, origin), req.path.endsWith('/certificate')));
+    const printView = req.path.toLowerCase().endsWith('/certificate') || req.path.toLowerCase().endsWith('/certificate/');
+    if (printView) {
+      const match = /^Bearer ([0-9a-f]{64})$/.exec(req.get('authorization') ?? '');
+      if (!match) { res.status(401).json({ error: 'An owner token is required to create this certificate.' }); return; }
+      if (!ownsCookie(row, match[1])) { res.status(403).json({ error: 'Only the owner can create this certificate.' }); return; }
+    }
+    res.type('html').send(await certificatePage(describe(row, origin), printView));
   });
 
   app.use(express.static(fileURLToPath(new URL('../public/', import.meta.url)), { maxAge: 0 }));

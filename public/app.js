@@ -13,6 +13,12 @@
   const eat = $("eat");
   const share = $("share");
   const certificate = $("certificate");
+  const exportOwner = $("export-owner");
+  const importOwner = $("import-owner");
+  const ownerFile = $("owner-file");
+  const ownerTools = $("owner-tools");
+  const verifyOwner = $("verify-owner");
+  const ownership = window.CookieOwnership;
   const retry = $("retry");
 
   let cookie = null;
@@ -154,8 +160,10 @@
   function rememberToken(id, token) {
     try {
       localStorage.setItem("cookie-owner:" + id, token);
+      return true;
     } catch {
       // Ownership still works in this tab.
+      return false;
     }
   }
 
@@ -272,6 +280,14 @@
   function renderContent() {
     const face = $("cookie-face");
     const cookieElement = $("cookie");
+    const isOwner = Boolean(cookie && ownerToken && !deliveryPending);
+    exportOwner.hidden = !isOwner;
+    exportOwner.disabled = busy;
+    importOwner.disabled = busy;
+    ownerTools.hidden = !isOwner;
+    $("confirm-owner").disabled = busy;
+    verifyOwner.hidden = !cookie || deliveryPending;
+    if (cookie) verifyOwner.href = cookie.verificationUrl;
 
     if (deliveryPending) {
       face.textContent = "🚚";
@@ -304,7 +320,8 @@
 
     share.disabled = busy || !cookie || cookie.bites === 3;
 
-    certificate.hidden = !cookie;
+    certificate.hidden = !cookie || !ownerToken;
+    certificate.disabled = busy;
 
     if (!cookie) {
       output.textContent = "";
@@ -367,8 +384,6 @@
       ? ""
       : "Only the original owner can eat this cookie.";
 
-    certificate.href = cookie.certificateUrl;
-
     try {
       document.cookie =
         `your_cookie=${gone ? "" : cookie.remainingHash}; ` +
@@ -409,7 +424,18 @@
 
         if (current !== generation) return;
 
-        ownerToken = readToken(result.id);
+        const savedToken = readToken(result.id);
+        if (savedToken) {
+          try {
+            result = await ownership.loadOwner(apiBase, result.id, savedToken);
+            if (current !== generation) return;
+            ownerToken = savedToken;
+          } catch {
+            if (current !== generation) return;
+            ownerToken = null;
+          }
+        }
+        if (current !== generation) return;
       } else {
         // Reuse the same token after a timeout so that a retry
         // retrieves the same issued cookie.
@@ -445,7 +471,7 @@
           ? "Only crumbs remain."
           : ownerToken
             ? ""
-            : "A shared cookie. Only its owner can take a bite.";
+            : "A shared cookie. Only its owner can take a bite or create a certificate.";
     } catch (error) {
       if (current !== generation) return;
 
@@ -573,6 +599,144 @@
         busy = false;
         render();
       }
+    }
+  });
+
+  certificate.addEventListener("click", async () => {
+    if (!cookie || !ownerToken || busy || deliveryPending) return;
+
+    // Open during the click so browsers allow the new tab. The secret is sent
+    // only in the Authorization header, never in a link or the certificate.
+    const certificateWindow = window.open("about:blank", "_blank");
+    if (!certificateWindow) {
+      status.textContent = "Allow pop-ups to open your certificate, then try again.";
+      return;
+    }
+    certificateWindow.opener = null;
+    certificateWindow.document.title = "Cookie certificate";
+    certificateWindow.document.body.textContent = "Preparing your certificate…";
+
+    const current = generation;
+    const id = cookie.id;
+    busy = true;
+    status.textContent = "";
+    render();
+
+    try {
+      const response = await fetch(`${apiBase}/api/cookies/${id}/certificate`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(60_000),
+        headers: { Authorization: "Bearer " + ownerToken },
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Could not create your certificate. Please try again.");
+      }
+      const html = await response.text();
+      if (current !== generation) {
+        certificateWindow.close();
+        return;
+      }
+      if (certificateWindow.closed) return;
+
+      certificateWindow.document.open();
+      certificateWindow.document.write(html);
+      certificateWindow.document.close();
+    } catch (error) {
+      certificateWindow.close();
+      if (current === generation) {
+        status.textContent = error.message || "Could not create your certificate. Please try again.";
+      }
+    } finally {
+      if (current === generation) {
+        busy = false;
+        render();
+      }
+    }
+  });
+
+  exportOwner.addEventListener("click", async () => {
+    if (!cookie || !ownerToken || busy || deliveryPending) return;
+    const current = generation, id = cookie.id, token = ownerToken;
+    busy = true;
+    render();
+    try {
+      await ownership.loadOwner(apiBase, id, token);
+      if (current !== generation) return;
+      const blob = new Blob([ownership.makePass(apiBase, id, token)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `cookie-${id}-PRIVATE-owner-pass.json`;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 30_000);
+      status.textContent = "Owner Pass saved. Keep this file private; anyone with it can control your cookie.";
+    } catch (error) {
+      if (current === generation) status.textContent = error.message;
+    } finally {
+      if (current === generation) { busy = false; render(); }
+    }
+  });
+
+  importOwner.addEventListener("click", () => {
+    if (!busy) ownerFile.click();
+  });
+
+  ownerFile.addEventListener("change", async () => {
+    const file = ownerFile.files?.[0];
+    ownerFile.value = "";
+    if (!file || busy) return;
+    const current = generation;
+    busy = true;
+    render();
+    try {
+      if (file.size > 8192) throw new Error("This file is too large to be an Owner Pass.");
+      const pass = ownership.parsePass(await file.text(), apiBase);
+      const restored = await ownership.loadOwner(apiBase, pass.cookieId, pass.ownerToken);
+      if (current !== generation) return;
+      const stored = rememberToken(pass.cookieId, pass.ownerToken);
+      // Invalidate any read that was already in flight for the previous cookie.
+      generation++;
+      cookie = restored;
+      ownerToken = pass.ownerToken;
+      pendingToken = null;
+      deliveryPending = false;
+      busy = false;
+      retry.hidden = true;
+      $("owner-code").value = "";
+      $("owner-result").textContent = "";
+      const url = new URL(location.href);
+      url.searchParams.set("cookie", pass.cookieId);
+      history.replaceState(null, "", url);
+      render();
+      status.textContent = stored
+        ? "Owner Pass restored. You can control this cookie on this browser."
+        : "Owner Pass restored for this tab. Browser storage is unavailable; keep your backup file.";
+    } catch (error) {
+      if (current === generation) status.textContent = error.message;
+    } finally {
+      if (current === generation) { busy = false; render(); }
+    }
+  });
+
+  $("confirm-owner-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!cookie || !ownerToken || busy || deliveryPending) return;
+    const current = generation;
+    busy = true;
+    $("owner-result").textContent = "Confirming…";
+    render();
+    try {
+      await ownership.confirm(apiBase, cookie.id, ownerToken, $("owner-code").value);
+      if (current !== generation) return;
+      $("owner-code").value = "";
+      $("owner-result").textContent = "Confirmed. Ask the verifier to check the result on their own verification page.";
+    } catch (error) {
+      if (current === generation) $("owner-result").textContent = error.message;
+    } finally {
+      if (current === generation) { busy = false; render(); }
     }
   });
 

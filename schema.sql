@@ -11,3 +11,16 @@ CREATE TABLE IF NOT EXISTS cookies (
   CHECK ((bites = 3 AND eaten_at IS NOT NULL)
       OR (bites < 3 AND eaten_at IS NULL))
 );
+
+CREATE TABLE IF NOT EXISTS owner_checks (
+  code TEXT PRIMARY KEY NOT NULL
+    CHECK(length(code) = 16 AND code NOT GLOB '*[^0-9a-f]*'),
+  cookie_id TEXT NOT NULL REFERENCES cookies(id),
+  verifier_token_hash TEXT NOT NULL UNIQUE CHECK(length(verifier_token_hash) = 64),
+  created_at INTEGER NOT NULL,
+  expires_at INTEGER NOT NULL CHECK(expires_at > created_at),
+  confirmed_at INTEGER,
+  CHECK(confirmed_at IS NULL OR (confirmed_at >= created_at AND confirmed_at < expires_at))
+);
+
+CREATE INDEX IF NOT EXISTS owner_checks_expiry ON owner_checks(expires_at);

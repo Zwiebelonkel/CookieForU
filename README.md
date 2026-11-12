@@ -13,8 +13,12 @@ HTML-Frontend und druckbaren Zertifikaten. Kein Sites-Projekt.
 - Öffentliche Teilen-Links; Essen nur mit separatem Besitzer-Token.
 - Gleichzeitige/doppelte Biss-Anfragen ändern den Stand nur einmal pro
   erwarteter Bissnummer. Netzwerkfehler lösen keinen automatischen weiteren Biss aus.
-- Öffentliche Prüfseite mit offiziellen Daten und QR-Code.
-- Zertifikatsansicht mit „Print / Save as PDF“ (Browser-Druckdialog).
+- Öffentliche Prüfseite mit offiziellen Daten.
+- Zertifikate mit QR-Code und „Print / Save as PDF“ nur mit dem passenden
+  Besitzer-Token. Bei geteilten Cookies ist „Certificate“ ausgeblendet.
+- Privater Owner-Pass als JSON-Download; auf einem anderen Browser wiederherstellbar.
+- Besitzprüfung ohne Konto: Ein eigener Prüfcode pro Prüfer, fünf Minuten gültig,
+  einmal vom Owner bestätigbar. Das Ergebnis erscheint auf dem Gerät des Prüfers.
 - Wiederholte Erstellungsanfragen mit demselben Besitzer-Token liefern denselben
   Cookie, statt bei einer verlorenen Antwort einen weiteren auszugeben.
 
@@ -26,9 +30,11 @@ Den **Inhalt dieses Ordners** ins Repository-Hauptverzeichnis kopieren:
 src/server.ts
 src/app.ts
 src/cookies.ts
+src/owner-checks.ts
 src/pages.ts
 public/index.html
 public/app.js
+public/ownership.js
 public/style.css
 public/apple-touch-icon.png
 public/certificate.css
@@ -120,12 +126,24 @@ Ohne `?cookie=` erhält jeder neue Seitenaufruf einen neuen Cookie.
 
 1. `/health` muss `{"ok":true}` zurückgeben.
 2. Auf der Startseite muss ein Cookie mit ID erscheinen.
-3. Teilen-Link in einem privaten Fenster öffnen: identische ID, Essen deaktiviert.
+3. Teilen-Link in einem privaten Fenster öffnen: identische ID, Essen deaktiviert,
+   „Certificate“ ausgeblendet. Die Zertifikats-API verweigert den Zugriff ohne
+   passendes Besitzer-Token.
 4. Im ursprünglichen Browser drei Bisse nehmen. Derselbe Teilen-Link muss danach
    den aufgegessenen Cookie zeigen. Ein offenes fremdes Fenster aktualisiert sich
    im sichtbaren Zustand spätestens beim nächsten erfolgreichen 15-Sekunden-Poll.
-5. „Certificate“ öffnen, den QR-Code scannen und „Print / Save as PDF“ verwenden.
+5. Im ursprünglichen Browser „Certificate“ öffnen, den QR-Code scannen und
+   „Print / Save as PDF“ verwenden. Die öffentliche Prüfseite zeigt nur den
+   Registereintrag und bietet keine Zertifikats-Druckfunktion.
 6. Eine erfundene 64-stellige ID über `/verify/…` aufrufen: „Cookie not found“.
+7. Beim Owner „Save Owner Pass“ wählen und die private JSON-Datei sicher aufbewahren.
+   In einem anderen Browser „Restore Owner Pass“ wählen und diese Datei importieren:
+   Derselbe Cookie ist wieder steuerbar, auch wenn er bereits aufgegessen ist.
+8. Auf der öffentlichen Prüfseite im privaten Fenster „Verify owner“ wählen. Den
+   Code im Owner-Browser unter „Confirm ownership“ bestätigen. Nur die zugehörige
+   Prüfseite zeigt die aktuelle Bestätigung; eine zweite neue Prüfung bleibt offen.
+   Nach fünf Minuten erlischt die Bestätigung. Ohne Verbindung wird kein grüner
+   Bestätigungsstatus weiter angezeigt, sobald die nächste Abfrage fehlschlägt.
 
 Für das T-Shirt den QR-Code auf die Startseite ohne Cookie-ID richten.
 Für ein Zertifikat verwendet der Server dagegen `/verify/<id>`.
@@ -177,6 +195,8 @@ Die Tests verwenden eine echte lokale libSQL-Datenbank. Sie prüfen unter andere
 Server-Ausgabe, gefälschte IDs, Besitzerschutz, konkurrierende Bisse, den dauerhaften
 Eaten-Zustand, Zertifikatsdaten, öffentliche Links und CORS. Eine echte Turso-
 Remote-Verbindung und ein Render-Deployment benötigen deine Kontoeinstellungen.
+Die Tests für den Prüfstatus führen das Frontend-Skript mit einer simulierten DOM-
+und Timer-Umgebung aus; sie ersetzen keine visuelle Prüfung im echten Browser.
 
 ## API
 
@@ -199,11 +219,74 @@ Antwort: `{"cookie": {"id":"…", "rarity":"…", "bites":0, …}}`.
 ```http
 GET /api/cookies/<id>
 GET /verify/<id>
-GET /api/cookies/<id>/certificate
 ```
 
 Unbekannte IDs erhalten 404. Ein aufgegessener Cookie bleibt als echter,
 bereits gegessener Cookie abrufbar. Die Original-ID wird nicht gelöscht oder gekürzt.
+
+### Zertifikat erstellen (nur Besitzer)
+
+```http
+GET /api/cookies/<id>/certificate
+Authorization: Bearer <ownerToken>
+```
+
+Ein fehlendes oder ungültig formatiertes Token führt zu 401, ein fremdes Token zu
+403. Die Prüfung erfolgt serverseitig. Das Frontend lädt das Zertifikat mit diesem
+Header und zeigt es in einem neuen Tab an; das Token steht nie in der URL oder im
+Zertifikat. Auch für aufgegessene Cookies kann der Besitzer ein Zertifikat erstellen.
+Die öffentliche Prüfseite erstellt kein Zertifikat und bietet keine Druckfunktion.
+
+### Owner-Pass prüfen / wiederherstellen
+
+```http
+GET /api/cookies/<id>/owner
+Authorization: Bearer <ownerToken>
+```
+
+Liefert den Cookie nur bei passendem Schlüssel zurück. Erst danach speichert das
+Frontend einen importierten Owner-Pass lokal. Der Import erstellt keinen neuen
+Cookie und verändert keine Bisse. Das JSON enthält Dienst-Origin, Cookie-ID und
+den geheimen Owner-Token. Der Browser sendet ihn ausschließlich an seine bereits
+konfigurierte API; eine abweichende Origin im Pass wird abgelehnt. Bei gesperrtem
+Browser-Speicher bleibt der Besitz nur im aktuellen Tab erhalten.
+
+### Besitzprüfung starten, lesen und bestätigen
+
+```http
+POST /api/cookies/<id>/owner-checks
+Content-Type: application/json
+
+{}
+```
+
+Öffentlich, mit eigenem Rate-Limit von zehn Starts pro Minute und IP/Instanz.
+Antwort: `{"check":{"code":"16-Hexzeichen","cookieId":"…","status":"pending",
+"expiresAt":"…","remainingMs":300000,"confirmedAt":null},"verifierToken":"…"}`.
+Code und Lese-Token werden zufällig vom Server erzeugt. Nur der Code wird dem
+Owner gezeigt; das Lese-Token bleibt im Arbeitsspeicher des Prüfer-Tabs.
+
+```http
+GET /api/cookies/<id>/owner-checks/<code>
+Authorization: Bearer <verifierToken>
+
+POST /api/cookies/<id>/owner-checks/<code>/confirm
+Authorization: Bearer <ownerToken>
+Content-Type: application/json
+
+{}
+```
+
+Der Owner bestätigt ausdrücklich den Code von der Seite des Prüfers. Bestätigung
+und Ablaufprüfung erfolgen atomar in Turso. Ein Code gilt nur für seinen Cookie
+und ist einmal bestätigbar (409 bei Wiederholung, 410 bei Ablauf). Die Prüfseite
+fragt ihren eigenen Status alle zwei Sekunden ab und entfernt den grünen Status
+bei Ablauf oder Abfragefehlern. Eine Bestätigung ist kein globales Besitzsiegel:
+Andere Prüfungen bleiben offen. Erneutes Laden beginnt ohne Bestätigung.
+
+`owner_checks` wird beim Start automatisch ergänzend angelegt; bestehende Cookies
+bleiben erhalten. Der Server speichert Lese-Tokens nur gehasht. Abgelaufene
+Prüfungen werden nach einem weiteren Tag beim Start neuer Prüfungen aufgeräumt.
 
 ### Einen Bissen nehmen
 
@@ -226,6 +309,12 @@ und zeigt ihre gespeicherte Rarität sowie den aktuellen Zustand. Das PDF selbst
 ist ein kopierbarer, bearbeitbarer Ausdruck und keine kryptografisch signierte PDF.
 Prüfe Domain und Online-Daten beim Scannen. Es wird kein exklusiver Besitz
 bescheinigt. Ein gegessener Cookie hat weiterhin einen historischen Ausgabebeleg.
+
+Die zusätzliche aktuelle Besitzprüfung bestätigt die Kontrolle über den geheimen
+Owner-Schlüssel, nicht die Identität einer realen Person. Ein kopiertes öffentliches
+Zertifikat kann keinen neuen Prüfcode beantworten. Der private Owner-Pass ist
+dagegen ein Zugangsschlüssel: Wer ihn kopiert, erhält dieselben Befugnisse. Er
+gehört niemals auf das öffentliche Zertifikat oder in die Hände eines Prüfers.
 
 Vorher nur im Browser erzeugte Cookies sind nicht im neuen Register und bekommen
 keine nachträgliche Echtheitsbestätigung. Aus dem Browser gelöschte Besitzer-Tokens

@@ -83,6 +83,11 @@ test('cookie service with a real local libSQL database', async t => {
       const verify = await fetch(base + '/verify/' + cookie.id);
       assert.equal(verify.status, 200);
       assert.match(await verify.text(), /Eaten — no bites remaining/);
+      const certificate = await fetch(base + `/api/cookies/${cookie.id}/certificate`, {
+        headers: { Authorization: 'Bearer ' + ownerToken }
+      });
+      assert.equal(certificate.status, 200);
+      assert.match(await certificate.text(), /Eaten — no bites remaining/);
     });
 
     await t.test('different visitors receive distinct cookies', async () => {
@@ -98,10 +103,49 @@ test('cookie service with a real local libSQL database', async t => {
       assert.equal((await fetch(base + '/api/cookies/not-a-hash')).status, 400);
     });
 
-    await t.test('certificate uses the trusted origin, QR code and server record', async () => {
+    await t.test('only the cookie owner can create a certificate', async () => {
+      const { cookie, ownerToken } = await issue();
+      const otherOwner = await issue();
+      const endpoint = base + `/api/cookies/${cookie.id}/certificate`;
+      for (const authorization of [undefined, 'Bearer invalid', 'Basic ' + ownerToken]) {
+        const response = await fetch(endpoint, {
+          headers: authorization ? { Authorization: authorization } : {}
+        });
+        assert.equal(response.status, 401);
+        assert.equal(response.headers.get('cache-control'), 'no-store');
+        assert.doesNotMatch(await response.text(), /Cookie Certificate|data:image/);
+      }
+      for (const token of [secret(), otherOwner.ownerToken]) {
+        const response = await fetch(endpoint, { headers: { Authorization: 'Bearer ' + token } });
+        assert.equal(response.status, 403);
+        assert.doesNotMatch(await response.text(), /Cookie Certificate|data:image/);
+      }
+      assert.equal((await fetch(endpoint + '?ownerToken=' + ownerToken)).status, 401);
+      assert.equal((await fetch(endpoint, { method: 'HEAD' })).status, 401);
+      for (const path of [endpoint + '/', endpoint.replace('/certificate', '/CERTIFICATE')]) {
+        const response = await fetch(path);
+        assert.equal(response.status, 401);
+        assert.equal(response.headers.get('cache-control'), 'no-store');
+      }
+    });
+
+    await t.test('public verification shows the record without certificate creation or printing', async () => {
+      const { cookie, ownerToken } = await issue();
+      const response = await fetch(base + '/verify/' + cookie.id);
+      assert.equal(response.status, 200);
+      const html = await response.text();
+      assert.match(html, /Verified cookie/);
+      assert.ok(html.includes(cookie.createdAt));
+      assert.doesNotMatch(html, /Cookie Certificate|id="print"|Print \/ Save as PDF|data:image/);
+      assert.ok(!html.includes(ownerToken));
+      assert.match(html, /id="start-owner-check"/);
+      assert.match(html, /Ownership has not been checked/);
+    });
+
+    await t.test('owner certificate uses the trusted origin, QR code and server record', async () => {
       const { cookie, ownerToken } = await issue();
       const response = await fetch(base + `/api/cookies/${cookie.id}/certificate`, {
-        headers: { 'X-Forwarded-Host': 'forged.example', Host: 'forged.example' }
+        headers: { Authorization: 'Bearer ' + ownerToken, 'X-Forwarded-Host': 'forged.example', Host: 'forged.example' }
       });
       assert.equal(response.status, 200);
       assert.equal(response.headers.get('cache-control'), 'no-store');
@@ -111,6 +155,8 @@ test('cookie service with a real local libSQL database', async t => {
       assert.ok(html.includes(cookie.createdAt));
       assert.match(html, /data:image\/png;base64,/);
       assert.match(html, /Print \/ Save as PDF/);
+      assert.ok(html.includes('href="https://cookies.example/certificate.css"'));
+      assert.ok(html.includes('src="https://cookies.example/certificate.js"'));
       assert.ok(!html.includes(ownerToken));
       assert.ok(!html.includes('forged.example'));
     });
@@ -147,7 +193,7 @@ test('cookie service with a real local libSQL database', async t => {
       const html = await (await fetch(base + '/')).text();
       assert.match(html, /apple-touch-icon\.png/);
       assert.match(html, /Certificate/);
-      for (const asset of ['/app.js', '/style.css', '/certificate.css', '/certificate.js', '/zoom.js']) {
+      for (const asset of ['/app.js', '/style.css', '/certificate.css', '/certificate.js', '/zoom.js', '/ownership.js']) {
         assert.equal((await fetch(base + asset)).status, 200);
       }
     });

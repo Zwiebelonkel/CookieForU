@@ -1,4 +1,5 @@
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { touch-action: pan-y; }
 body { margin: 0; background: #a88b72; color: #37291e; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; padding: 40px 20px; }
 .paper { max-width: 750px; margin: 0 auto; padding: 48px; border: 1px solid #e4d7c5; background: #fffaf2; box-shadow: 0 18px 60px #30201218; }
@@ -23,13 +24,22 @@ a { color: inherit; }
 .actions { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-top: 28px; }
 .actions button { border: 0; background: #49372a; color: #fffaf2; padding: 12px 16px; border-radius: 6px; cursor: pointer; font: inherit; font-size: 12px; }
 .actions a { font-size: 12px; }
+.owner-check { margin-top: 28px; border-top: 1px solid #e8ddcd; padding-top: 20px; }
+.owner-check h2 { font: normal 24px Georgia, serif; }
+.owner-check p { font-size: 13px; line-height: 1.7; }
+.owner-check button { font: inherit; font-size: 13px; border: 0; border-radius: 6px; padding: 12px 16px; background: #49372a; color: #fffaf2; cursor: pointer; }
+.owner-check button:disabled { opacity: .5; cursor: default; }
+.owner-check button:focus-visible { outline: 2px solid #49372a; outline-offset: 3px; }
+.check-code { display: block; font: 20px ui-monospace, Consolas, monospace; letter-spacing: .06em; overflow-wrap: anywhere; user-select: all; padding: 16px; background: #49372a0b; border-radius: 6px; }
+#check-result { padding: 12px; background: #806c5910; border-radius: 6px; }
+#check-result[data-state="confirmed"] { color: #1d5637; background: #e3f2e8; border: 1px solid #78a98a; }
 @media screen and (max-width: 500px) { body { padding: 16px; } .paper { padding: 24px; } .verification { flex-direction: column; align-items: flex-start; } }
 @page { size: A4; margin: 15mm; }
 @media print {
   html, body { width: 180mm; margin: 0; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   body { background: white; padding: 0; color: #241b14; }
   .paper { width: 100%; max-width: none; margin: 0; box-shadow: none; border: 1px solid #baa78f; padding: 8mm; break-inside: avoid; page-break-inside: avoid; }
-  .actions { display: none; }
+  .actions, .owner-check { display: none; }
   .verification { flex-direction: row; align-items: center; break-inside: avoid; }
   .verification img { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
   dl div { break-inside: avoid; }
