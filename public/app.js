@@ -69,7 +69,7 @@
       const data = await response.json();
 
       if (requestGeneration === generation) {
-        if (deliveryPending) {
+        if (deliveryPending || !cookie) {
           status.textContent = "";
         }
 
