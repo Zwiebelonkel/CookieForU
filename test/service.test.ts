@@ -20,11 +20,23 @@ test('cookie service with a real local libSQL database', async t => {
   assert.ok(address && typeof address === 'object');
   const base = `http://127.0.0.1:${address.port}`;
   const secret = () => randomBytes(32).toString('hex');
-  const post = (path: string, body: object, token?: string) => fetch(base + path, {
+  const sessions = new Map<string, string>();
+  const post = async (path: string, body: object, token?: string) => {
+    let session;
+    if (path === '/api/cookies') {
+      const ownerToken = (body as { ownerToken: string }).ownerToken;
+      session = sessions.get(ownerToken);
+      if (!session) {
+        session = (await (await fetch(base + '/api/session', { method: 'POST' })).json()).sessionToken as string;
+        sessions.set(ownerToken, session);
+      }
+    }
+    return fetch(base + path, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}), ...(session ? { 'X-Cookie-Session': session } : {}) },
     body: JSON.stringify(body)
-  });
+    });
+  };
   async function issue(ownerToken = secret()) {
     const response = await post('/api/cookies', { ownerToken });
     assert.equal(response.status, 201);

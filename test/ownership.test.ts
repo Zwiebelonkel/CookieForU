@@ -22,9 +22,10 @@ test('Owner Pass restoration and independent, expiring ownership checks', async 
     return `http://127.0.0.1:${address.port}`;
   }
   const base = await listen();
+  const sessionToken = (await (await fetch(base + '/api/session', { method: 'POST' })).json()).sessionToken;
   const secret = () => randomBytes(32).toString('hex');
   const post = (path: string, body: object = {}, token?: string, host = base) => fetch(host + path, {
-    method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Cookie-Session': sessionToken, ...(token ? { Authorization: 'Bearer ' + token } : {}) },
     body: JSON.stringify(body)
   });
   const get = (path: string, token?: string, host = base) => fetch(host + path, {

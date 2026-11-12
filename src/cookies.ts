@@ -56,26 +56,54 @@ export async function findCookie(db: Client, id: string) {
   return result.rows[0];
 }
 
-export async function issueCookie(db: Client, ownerToken: string) {
+export const COOKIE_LIMIT = 10;
+export const COOKIE_WINDOW_MS = 10 * 60_000;
+
+export async function createCookieSession(db: Client) {
+  const sessionToken = randomBytes(32).toString('hex');
+  await db.execute({
+    sql: 'INSERT INTO cookie_sessions (token_hash, created_at) VALUES (?, ?)',
+    args: [tokenHash(sessionToken), Date.now()]
+  });
+  return sessionToken;
+}
+
+export async function issueCookie(db: Client, ownerToken: string, sessionToken: string, now = Date.now()) {
   const ownerHash = tokenHash(ownerToken);
+  const sessionHash = tokenHash(sessionToken);
   // A retry with the same secret token returns the same cookie.
-  // The browser can choose a token, but never a cookie ID or rarity.
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const id = randomBytes(32).toString('hex');
-    const results = await db.batch([
-      {
-        sql: `INSERT INTO cookies
-          (id, owner_token_hash, created_at, max_streak, rules_version)
-          VALUES (?, ?, ?, ?, ?) ON CONFLICT DO NOTHING`,
-        args: [id, ownerHash, new Date().toISOString(), longestRun(id), RULES_VERSION]
-      },
-      { sql: 'SELECT * FROM cookies WHERE owner_token_hash = ?', args: [ownerHash] }
-    ], 'write');
-    if (results[1].rows[0]) {
-      return { row: results[1].rows[0], created: results[0].rowsAffected === 1 };
+  // The quota and insertion share a write transaction, including across servers.
+  const transaction = await db.transaction('write');
+  try {
+    const session = await transaction.execute({ sql: 'SELECT token_hash FROM cookie_sessions WHERE token_hash = ?', args: [sessionHash] });
+    if (!session.rows.length) return { error: 'session_required' as const };
+
+    const existing = await transaction.execute({ sql: 'SELECT * FROM cookies WHERE owner_token_hash = ?', args: [ownerHash] });
+    if (existing.rows[0]) return { row: existing.rows[0], created: false };
+
+    const usage = await transaction.execute({
+      sql: 'SELECT count(*) AS total, min(issued_at) AS oldest FROM cookie_issuances WHERE session_hash = ? AND issued_at > ?',
+      args: [sessionHash, now - COOKIE_WINDOW_MS]
+    });
+    if (Number(usage.rows[0].total) >= COOKIE_LIMIT) {
+      return { error: 'quota_exhausted' as const, retryAfterMs: Math.max(1, Number(usage.rows[0].oldest) + COOKIE_WINDOW_MS - now) };
     }
+
+    const id = randomBytes(32).toString('hex');
+    await transaction.execute({
+      sql: `INSERT INTO cookies (id, owner_token_hash, created_at, max_streak, rules_version) VALUES (?, ?, ?, ?, ?)`,
+      args: [id, ownerHash, new Date(now).toISOString(), longestRun(id), RULES_VERSION]
+    });
+    await transaction.execute({
+      sql: 'INSERT INTO cookie_issuances (cookie_id, session_hash, issued_at) VALUES (?, ?, ?)',
+      args: [id, sessionHash, now]
+    });
+    const result = await transaction.execute({ sql: 'SELECT * FROM cookies WHERE id = ?', args: [id] });
+    await transaction.commit();
+    return { row: result.rows[0], created: true };
+  } finally {
+    transaction.close();
   }
-  throw new Error('Cookie issuance failed');
 }
 
 export async function takeBite(db: Client, id: string, ownerToken: string, expectedBites: number) {

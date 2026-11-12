@@ -24,3 +24,15 @@ CREATE TABLE IF NOT EXISTS owner_checks (
 );
 
 CREATE INDEX IF NOT EXISTS owner_checks_expiry ON owner_checks(expires_at);
+
+CREATE TABLE IF NOT EXISTS cookie_sessions (
+  token_hash TEXT PRIMARY KEY NOT NULL CHECK(length(token_hash) = 64),
+  created_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS cookie_issuances (
+  cookie_id TEXT PRIMARY KEY NOT NULL REFERENCES cookies(id),
+  session_hash TEXT NOT NULL REFERENCES cookie_sessions(token_hash),
+  issued_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS cookie_issuances_session_time ON cookie_issuances(session_hash, issued_at);

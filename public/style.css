@@ -474,6 +474,18 @@ button:hover:not(:disabled) svg {
 .cookie.delivering .cookie-spin {
   animation: drive 650ms ease-in-out infinite alternate;
 }
+.cookie.baking { margin-bottom: 24px; }
+.cookie.baking .cookie-spin { animation: none; }
+.baking-info { margin-top: 15px; }
+#baking-timer {
+  display: inline-block;
+  min-width: 5ch;
+  color: #49372a;
+  font: 28px ui-monospace, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .08em;
+}
+.baking-info p { margin: 12px 0 0; color: #594333; font-size: 11px; line-height: 1.7; }
 @keyframes drive {
   from {
     transform: translateX(-28px);

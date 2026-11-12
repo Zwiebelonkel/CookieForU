@@ -19,6 +19,7 @@
     <link rel="stylesheet" href="./style.css" />
     <script src="./zoom.js" defer></script>
     <script src="./ownership.js" defer></script>
+    <script src="./session.js" defer></script>
     <script src="./info-menu.js" defer></script>
     <script src="./app.js" defer></script>
   </head>
@@ -62,6 +63,10 @@
       <div class="rarity" id="rarity"></div>
       <div class="rarity-stars" id="rarity-stars" role="img" hidden></div>
       <p class="message" id="message">Cookie is getting delivered.</p>
+      <div id="baking-info" class="baking-info" hidden>
+        <output id="baking-timer" role="timer" aria-label="Time until the next cookie">10:00</output>
+        <p>10 cookies every 10 minutes.<br>Your next cookie will arrive automatically.</p>
+      </div>
       <div class="actions">
         <button id="eat" type="button" disabled>Eat cookie</button>
         <button id="share" type="button" disabled>

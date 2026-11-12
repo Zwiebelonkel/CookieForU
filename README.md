@@ -6,6 +6,12 @@ HTML-Frontend und druckbaren Zertifikaten. Kein Sites-Projekt.
 ## Was enthalten ist
 
 - Kryptografisch zufällige 64-stellige IDs, ausschließlich vom Server erzeugt.
+- Maximal 10 neue Kekse pro Browser-Session innerhalb der letzten 10 Minuten.
+  Die Session wird tabübergreifend im Browser gespeichert; der Server zählt neue
+  Ausgaben dauerhaft und atomar in der Datenbank. Neuladen und Server-Neustarts
+  setzen das Limit nicht zurück. Wiederholungen mit demselben Owner-Token zählen
+  nicht erneut. Beim Limit erscheint 🍫 „Cookies are getting baked.“ mit Countdown;
+  danach wird automatisch erneut ein Keks angefordert.
 - Unverändertes Original und Raritätsregel v1 dauerhaft in Turso.
 - Kaffeebraune Website mit pulsierendem, langsam rotierendem Cookie.
 - Animiertes Info-Menü oben links mit Raritätschancen, Sternen und farbigen
@@ -48,6 +54,7 @@ src/pages.ts
 public/index.html
 public/app.js
 public/ownership.js
+public/session.js
 public/info-menu.js
 public/style.css
 public/apple-touch-icon.png
@@ -216,9 +223,19 @@ und Timer-Umgebung aus; sie ersetzen keine visuelle Prüfung im echten Browser.
 
 ### Neuen Cookie ausstellen
 
+Zuerst mit `POST /api/session` und leerem JSON-Body `{}` eine anonyme Session
+anlegen. Die Antwort enthält `sessionToken` (64 Hexzeichen). Das Frontend speichert
+es im Local Storage unter `cookie-session:<API-Origin>` und verwendet es über
+Neuladen und mehrere Tabs hinweg. Web Locks verhindern bei gleichzeitig geöffneten
+Tabs die mehrfache Erstanlage. Bei deaktiviertem Browserspeicher gilt die Session
+nur im aktuellen Tab. Ohne Nutzerkonto bezieht sich das Limit auf dieses
+Browserprofil; ein anderer Browser oder gelöschter Browserspeicher hat eine neue
+Session.
+
 ```http
 POST /api/cookies
 Content-Type: application/json
+X-Cookie-Session: <sessionToken>
 
 {"ownerToken":"64-kryptografisch-zufällige-kleine-Hexzeichen"}
 ```
@@ -227,6 +244,11 @@ Der Browser erzeugt nur das geheime Besitzer-Token. ID und Rarität kommen vom S
 Das echte Token muss genau `[0-9a-f]{64}` entsprechen. Andere Body-Felder werden
 abgelehnt. Status 201 bei neuer Ausgabe, 200 bei Wiederholung mit demselben Token.
 Antwort: `{"cookie": {"id":"…", "rarity":"…", "bites":0, …}}`.
+Ohne gültige Session: 401 mit `code: "session_required"`. Bei 10 neuen Ausgaben
+innerhalb der letzten 10 Minuten: 429 mit `code: "quota_exhausted"`,
+`retryAfterMs` und `Retry-After` (Sekunden). Sobald der älteste Keks aus dem
+Zeitfenster fällt, ist wieder Platz für einen neuen. Abrufen, Essen, Zertifikate
+und Owner-Pass-Wiederherstellung verbrauchen kein Kontingent.
 
 ### Abrufen / validieren
 

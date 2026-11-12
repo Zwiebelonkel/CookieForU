@@ -30,6 +30,7 @@
   let refreshing = false;
   let generation = 0;
   let deliveryPending = true;
+  let bakingDeadline = 0;
 
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const menuSummary = ownerMenu.querySelector("summary");
@@ -211,10 +212,12 @@
     return "common";
   }
 
-  async function request(path, options = {}, requestGeneration = generation) {
+  async function request(path, options = {}, requestGeneration = generation, retrySession = true) {
     let response;
 
     try {
+      const issuing = path === "/api/cookies" && options.method === "POST";
+      const sessionToken = issuing ? await window.CookieSession.getToken(apiBase) : null;
       response = await fetch(apiBase + path, {
         ...options,
         cache: "no-store",
@@ -222,6 +225,7 @@
         headers: {
           ...options.headers,
           ...(options.body ? { "Content-Type": "application/json" } : {}),
+          ...(sessionToken ? { "X-Cookie-Session": sessionToken } : {}),
         },
       });
 
@@ -240,6 +244,14 @@
       }
 
       if (!response.ok) {
+        if (issuing && response.status === 401 && data.code === "session_required" && retrySession && requestGeneration === generation) {
+          window.CookieSession.forget(apiBase);
+          return await request(path, options, requestGeneration, false);
+        }
+        if (issuing && response.status === 429 && data.code === "quota_exhausted" &&
+            Number.isFinite(data.retryAfterMs) && data.retryAfterMs > 0 && requestGeneration === generation) {
+          bakingDeadline = performance.now() + data.retryAfterMs;
+        }
         const error = new Error(data.error || "Please try again.");
         error.status = response.status;
         throw error;
@@ -323,6 +335,32 @@
     $("confirm-owner").disabled = busy;
     verifyOwner.hidden = !cookie || deliveryPending;
     if (cookie) verifyOwner.href = cookie.verificationUrl;
+
+    const baking = bakingDeadline > 0 && !cookie;
+    $("baking-info").hidden = !baking;
+    output.hidden = baking;
+    $("rarity").hidden = baking;
+    status.hidden = baking;
+    document.querySelector(".actions").hidden = baking;
+    cookieElement.classList.toggle("baking", baking);
+    eat.hidden = baking;
+    share.hidden = baking;
+    if (baking) {
+      delete cookieElement.dataset.rarity;
+      cookieElement.classList.remove("delivering", "eaten");
+      cookieElement.setAttribute("aria-label", "Cookies are getting baked.");
+      face.textContent = "🍫";
+      face.dataset.bites = "0";
+      output.textContent = "";
+      $("rarity").textContent = "";
+      $("rarity-stars").hidden = true;
+      $("message").textContent = "Cookies are getting baked.";
+      status.textContent = "";
+      certificate.hidden = true;
+      retry.hidden = true;
+      tickBaking();
+      return;
+    }
 
     if (deliveryPending) {
       delete cookieElement.dataset.rarity;
@@ -442,12 +480,14 @@
   }
 
   async function initialize() {
+    if (bakingDeadline > performance.now()) return;
     const current = ++generation;
 
     cookie = null;
     ownerToken = null;
     busy = true;
     deliveryPending = true;
+    bakingDeadline = 0;
 
     retry.hidden = true;
 
@@ -526,7 +566,7 @@
         status.textContent = error.message;
       }
 
-      retry.hidden = false;
+      retry.hidden = bakingDeadline > 0;
     } finally {
       if (current === generation) {
         busy = false;
@@ -755,6 +795,7 @@
       ownerToken = pass.ownerToken;
       pendingToken = null;
       deliveryPending = false;
+      bakingDeadline = 0;
       busy = false;
       retry.hidden = true;
       $("owner-code").value = "";
@@ -849,11 +890,20 @@
   function checkDelivery() {
     if (document.hidden || busy || refreshing) return;
 
+    if (bakingDeadline) { tickBaking(); return; }
+
     if (!cookie && deliveryPending) {
       initialize();
     } else {
       refresh();
     }
+  }
+
+  function tickBaking() {
+    if (!bakingDeadline) return;
+    const seconds = Math.max(0, Math.ceil((bakingDeadline - performance.now()) / 1000));
+    $("baking-timer").textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+    if (seconds === 0 && !document.hidden && !busy && !refreshing && !cookie) initialize();
   }
 
   retry.addEventListener("click", () => {
@@ -868,6 +918,7 @@
 
   window.addEventListener("pageshow", (event) => {
     if (event.persisted) {
+      if (bakingDeadline) { tickBaking(); return; }
       pendingToken = null;
       initialize();
     }
@@ -876,6 +927,7 @@
   document.addEventListener("visibilitychange", checkDelivery);
 
   setInterval(checkDelivery, 5_000);
+  setInterval(tickBaking, 1_000);
 
   initialize();
 })();
