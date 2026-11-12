@@ -35,15 +35,48 @@
       animation: pulse 3.8s ease-in-out infinite;
     }
 
-    .cookie span {
+    .cookie-spin {
+      animation: rotate 90s linear infinite;
+    }
+
+    .cookie-face {
       display: block;
       font-size: 104px;
-      animation: rotate 90s linear infinite;
+      transition: opacity 500ms, transform 500ms;
+    }
+
+    .cookie-face[data-bites="1"] {
+      -webkit-mask-image: radial-gradient(
+        circle 26px at 94% 30%, transparent 98%, black 100%
+      );
+      mask-image: radial-gradient(
+        circle 26px at 94% 30%, transparent 98%, black 100%
+      );
+    }
+
+    .cookie-face[data-bites="2"] {
+      -webkit-mask-image: radial-gradient(
+        circle 51px at 88% 35%, transparent 98%, black 100%
+      );
+      mask-image: radial-gradient(
+        circle 51px at 88% 35%, transparent 98%, black 100%
+      );
+    }
+
+    .cookie-face[data-bites="3"] {
+      opacity: 0;
+      transform: scale(0.65);
+    }
+
+    .cookie.eaten,
+    .cookie.eaten .cookie-spin {
+      animation-play-state: paused;
     }
 
     .id {
       display: block;
       width: min(100%, 38ch);
+      min-height: 4em;
       margin: 0 auto;
       font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
       font-size: clamp(9px, 2.6vw, 12px);
@@ -111,13 +144,19 @@
       line-height: 1.6;
     }
 
-    .share {
+    .actions {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    button {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
       min-height: 44px;
-      margin-top: 20px;
       padding: 8px 14px;
       border: 0;
       border-radius: 8px;
@@ -126,27 +165,26 @@
       font: inherit;
       font-size: 12px;
       cursor: pointer;
-      opacity: 0.65;
+      opacity: 0.7;
       transition: opacity 200ms, background 200ms;
     }
 
-    .share:hover {
+    button:hover:not(:disabled) {
       opacity: 1;
       background: #49372a0c;
     }
 
-    .share:focus-visible {
+    button:focus-visible {
       outline: 2px solid #49372a;
       outline-offset: 3px;
-      opacity: 1;
     }
 
-    .share:disabled {
+    button:disabled {
       opacity: 0.3;
       cursor: default;
     }
 
-    .share svg {
+    button svg {
       width: 16px;
       height: 16px;
       fill: none;
@@ -157,9 +195,11 @@
     }
 
     .status {
-      min-height: 18px;
-      margin-top: 4px;
+      min-height: 32px;
+      max-width: 320px;
+      margin: 4px auto 0;
       font-size: 11px;
+      line-height: 1.6;
       opacity: 0.75;
     }
 
@@ -176,36 +216,47 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .cookie, .cookie span { animation: none; }
-      .share { transition: none; }
+      .cookie, .cookie-spin { animation: none; }
+      .cookie-face, button { transition: none; }
     }
   </style>
 </head>
 
 <body>
   <main aria-label="A cookie just for you">
-    <div class="cookie" role="img" aria-label="Cookie">
-      <span aria-hidden="true">🍪</span>
+    <div class="cookie" id="cookie" role="img" aria-label="Cookie">
+      <div class="cookie-spin">
+        <span
+          class="cookie-face"
+          id="cookie-face"
+          data-bites="0"
+          aria-hidden="true"
+        >🍪</span>
+      </div>
     </div>
 
     <output
       class="id"
       id="cookie-id"
-      aria-label="Your unique cookie ID"
+      aria-label="Remaining cookie hash"
       aria-live="polite"
     ></output>
 
     <div class="rarity" id="rarity"></div>
 
-    <p>This cookie is only supposed to be for you.</p>
+    <p id="message">This cookie is only supposed to be for you.</p>
 
-    <button class="share" id="share" type="button" disabled>
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 15V3m-4 4 4-4 4 4"/>
-        <path d="M5 13v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7"/>
-      </svg>
-      Share cookie
-    </button>
+    <div class="actions">
+      <button id="eat" type="button" disabled>Eat cookie</button>
+
+      <button id="share" type="button" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 15V3m-4 4 4-4 4 4"/>
+          <path d="M5 13v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7"/>
+        </svg>
+        Share cookie
+      </button>
+    </div>
 
     <div class="status" id="status" role="status"></div>
 
@@ -217,12 +268,31 @@
   <script>
     const output = document.getElementById("cookie-id");
     const rarityLabel = document.getElementById("rarity");
+    const cookieElement = document.getElementById("cookie");
+    const cookieFace = document.getElementById("cookie-face");
+    const message = document.getElementById("message");
+    const eatButton = document.getElementById("eat");
     const shareButton = document.getElementById("share");
     const status = document.getElementById("status");
 
-    let currentId = "";
+    let cookie = null;
     let generation = 0;
     let sharing = false;
+
+    function storageKey(id) {
+      return "cookie-bites:" + id;
+    }
+
+    function readBites(id) {
+      const value = localStorage.getItem(storageKey(id));
+      return /^[0-3]$/.test(value ?? "") ? Number(value) : 0;
+    }
+
+    function saveBites(id, bites) {
+      const saved = Math.max(readBites(id), bites);
+      localStorage.setItem(storageKey(id), String(saved));
+      return saved;
+    }
 
     function getRarity(length) {
       if (length >= 7) return "mythic";
@@ -233,14 +303,10 @@
       return "common";
     }
 
-    function displayHash(id) {
+    function displayHash(hash) {
       const fragment = document.createDocumentFragment();
-      const sequences = id.match(/(.)\1*/g) || [];
-      let longest = 1;
 
-      for (const sequence of sequences) {
-        longest = Math.max(longest, sequence.length);
-
+      for (const sequence of hash.match(/(.)\1*/g) || []) {
         if (sequence.length >= 2) {
           const highlight = document.createElement("mark");
           highlight.textContent = sequence;
@@ -254,32 +320,83 @@
       }
 
       output.replaceChildren(fragment);
+    }
 
-      const rarity = getRarity(longest);
-      rarityLabel.textContent = rarity;
-      rarityLabel.dataset.level = rarity;
-      rarityLabel.title =
-        `Longest sequence: ${longest} identical characters in a row`;
+    function updateBrowserCookie() {
+      if (!cookie) return;
+
+      try {
+        const secure = location.protocol === "https:" ? "; Secure" : "";
+
+        if (cookie.bites === 3) {
+          document.cookie =
+            "your_cookie=; Path=/; Max-Age=0; SameSite=Lax" + secure;
+        } else {
+          const length = Math.floor(64 * (3 - cookie.bites) / 3);
+
+          document.cookie =
+            "your_cookie=" + cookie.id.slice(0, length) +
+            "; Path=/; Max-Age=31536000; SameSite=Lax" + secure;
+        }
+      } catch {
+        // Browser-cookie storage is optional.
+      }
+    }
+
+    function renderCookie() {
+      if (!cookie) return;
+
+      const gone = cookie.bites === 3;
+      const length = Math.floor(64 * (3 - cookie.bites) / 3);
+
+      displayHash(cookie.id.slice(0, length));
+
+      cookieFace.dataset.bites = String(cookie.bites);
+      cookieElement.classList.toggle("eaten", gone);
+      cookieElement.setAttribute(
+        "aria-label",
+        gone ? "Cookie eaten" : `Cookie, ${3 - cookie.bites} bites remaining`
+      );
+
+      // Rarity belongs to the original cookie.
+      const longest = Math.max(
+        ...(cookie.id.match(/(.)\1*/g) || []).map(run => run.length)
+      );
+
+      rarityLabel.textContent = gone ? "" : getRarity(longest);
+      rarityLabel.dataset.level = gone ? "" : getRarity(longest);
+
+      message.textContent = gone
+        ? "This cookie is gone. You ate it."
+        : "This cookie is only supposed to be for you.";
+
+      eatButton.textContent = cookie.bites === 0
+        ? "Eat cookie"
+        : gone ? "Gone" : "Take another bite";
+
+      eatButton.disabled = gone || sharing;
+      shareButton.disabled = gone || sharing;
+
+      updateBrowserCookie();
     }
 
     async function createCookie() {
       const request = ++generation;
 
-      currentId = "";
+      cookie = null;
+      eatButton.disabled = true;
       shareButton.disabled = true;
       status.textContent = "";
 
       try {
-        const sharedId = new URL(location.href).searchParams.get("cookie");
+        const params = new URL(location.href).searchParams;
+        const sharedId = params.get("cookie");
         let id;
 
-        // Shared links display the original cookie.
         if (sharedId && /^[a-f0-9]{64}$/i.test(sharedId)) {
           id = sharedId.toLowerCase();
         } else {
-          // Ordinary visits receive a new random cookie.
           const random = crypto.getRandomValues(new Uint8Array(32));
-
           const bytes = crypto.subtle
             ? new Uint8Array(await crypto.subtle.digest("SHA-256", random))
             : random;
@@ -291,50 +408,94 @@
 
         if (request !== generation) return;
 
-        currentId = id;
-        displayHash(id);
-        shareButton.disabled = false;
+        const incomingBites = sharedId &&
+          /^[0-3]$/.test(params.get("bites") ?? "")
+            ? Number(params.get("bites"))
+            : 0;
 
-        try {
-          document.cookie =
-            "your_cookie=" + id +
-            "; Path=/; Max-Age=31536000; SameSite=Lax" +
-            (location.protocol === "https:" ? "; Secure" : "");
-        } catch {
-          // Display and sharing still work without cookie storage.
+        // Persist the state before allowing the cookie to be eaten.
+        const bites = saveBites(id, incomingBites);
+
+        cookie = { id, bites };
+        renderCookie();
+
+        if (bites === 3) {
+          status.textContent = "Only crumbs remain.";
         }
       } catch {
         if (request !== generation) return;
-        output.textContent = "Please reload to receive your cookie.";
+
+        output.textContent = "";
         rarityLabel.textContent = "";
+        status.textContent =
+          "Allow local storage and reload to keep your cookie's bite history.";
       }
     }
+
+    eatButton.addEventListener("click", () => {
+      if (!cookie || cookie.bites >= 3 || sharing) return;
+
+      try {
+        // Check saved state in case another tab already took a bite.
+        const latest = Math.max(cookie.bites, readBites(cookie.id));
+        const next = Math.min(3, latest + 1);
+
+        // Save first: a failed write must not silently lose bite history.
+        cookie.bites = saveBites(cookie.id, next);
+        renderCookie();
+
+        const remaining = 3 - cookie.bites;
+        status.textContent = remaining === 0
+          ? "Only crumbs remain."
+          : `${remaining} ${remaining === 1 ? "bite" : "bites"} left.`;
+      } catch {
+        status.textContent =
+          "Your browser could not save this bite. Please allow local storage.";
+      }
+    });
 
     async function copyLink(url) {
       try {
         await navigator.clipboard.writeText(url);
         status.textContent = "Link copied.";
       } catch {
-        // Fallback when clipboard access is unavailable.
         window.prompt("Copy your cookie link:", url);
       }
     }
 
     shareButton.addEventListener("click", async () => {
-      if (!currentId || sharing) return;
+      if (!cookie || cookie.bites >= 3 || sharing) return;
 
       if (!["https:", "http:"].includes(location.protocol)) {
         status.textContent = "Open the hosted page to share a link.";
         return;
       }
 
+      try {
+        cookie.bites = Math.max(cookie.bites, readBites(cookie.id));
+        renderCookie();
+      } catch {
+        status.textContent = "Could not check this cookie's bite history.";
+        return;
+      }
+
+      if (cookie.bites >= 3) {
+        status.textContent = "This cookie has already been eaten.";
+        return;
+      }
+
       const url = new URL(location.href);
       url.search = "";
       url.hash = "";
-      url.searchParams.set("cookie", currentId);
+      url.searchParams.set("cookie", cookie.id);
+
+      // Share the cookie with its current number of bites.
+      if (cookie.bites > 0) {
+        url.searchParams.set("bites", String(cookie.bites));
+      }
 
       sharing = true;
-      shareButton.disabled = true;
+      renderCookie();
       status.textContent = "";
 
       try {
@@ -355,7 +516,23 @@
         }
       } finally {
         sharing = false;
-        shareButton.disabled = !currentId;
+        renderCookie();
+      }
+    });
+
+    // Keep open tabs in sync when the same cookie is eaten elsewhere.
+    window.addEventListener("storage", event => {
+      if (!cookie || event.key !== storageKey(cookie.id)) return;
+
+      try {
+        cookie.bites = Math.max(cookie.bites, readBites(cookie.id));
+        renderCookie();
+
+        if (cookie.bites === 3) {
+          status.textContent = "Only crumbs remain.";
+        }
+      } catch {
+        // Preserve the current state if storage becomes unavailable.
       }
     });
 
