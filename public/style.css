@@ -205,9 +205,19 @@ button svg {
 ::selection {
   background: #73513b40;
 }
-/* Keep the delivery truck upright. */
-.cookie.delivering .cookie-spin {
+.cookie.delivering {
   animation: none;
+}
+.cookie.delivering .cookie-spin {
+  animation: drive 650ms ease-in-out infinite alternate;
+}
+@keyframes drive {
+  from {
+    transform: translateX(-28px);
+  }
+  to {
+    transform: translateX(28px);
+  }
 }
 @keyframes pulse {
   0%,
@@ -228,7 +238,8 @@ button svg {
 }
 @media (prefers-reduced-motion: reduce) {
   .cookie,
-  .cookie-spin {
+  .cookie-spin,
+  .cookie.delivering .cookie-spin {
     animation: none;
   }
   .cookie-face,
