@@ -15,6 +15,7 @@ html,
 body {
   width: 100%;
   overflow-x: hidden;
+  overscroll-behavior-x: none;
 }
 @supports (overflow-x: clip) {
   html,
@@ -27,6 +28,7 @@ body {
   min-height: 100vh;
   min-height: 100svh;
   display: grid;
+  /* Keep intrinsic text widths from widening the page's only column. */
   grid-template-columns: minmax(0, 1fr);
   place-items: center;
   background: radial-gradient(ellipse at center, #b39980, #a88b72);
