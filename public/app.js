@@ -18,6 +18,8 @@
   const ownerFile = $("owner-file");
   const ownerTools = $("owner-tools");
   const verifyOwner = $("verify-owner");
+  const ownerMenu = $("owner-menu");
+  const ownerMenuStatus = $("owner-menu-status");
   const ownership = window.CookieOwnership;
   const retry = $("retry");
 
@@ -655,10 +657,21 @@
     }
   });
 
+  document.addEventListener("pointerdown", (event) => {
+    if (ownerMenu.open && !ownerMenu.contains(event.target)) ownerMenu.open = false;
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && ownerMenu.open) {
+      ownerMenu.open = false;
+      ownerMenu.querySelector("summary").focus();
+    }
+  });
+
   exportOwner.addEventListener("click", async () => {
     if (!cookie || !ownerToken || busy || deliveryPending) return;
     const current = generation, id = cookie.id, token = ownerToken;
     busy = true;
+    ownerMenuStatus.textContent = "";
     render();
     try {
       await ownership.loadOwner(apiBase, id, token);
@@ -672,9 +685,9 @@
       link.click();
       link.remove();
       setTimeout(() => URL.revokeObjectURL(url), 30_000);
-      status.textContent = "Owner Pass saved. Keep this file private; anyone with it can control your cookie.";
+      ownerMenuStatus.textContent = "Owner Pass saved. Keep this file private; anyone with it can control your cookie.";
     } catch (error) {
-      if (current === generation) status.textContent = error.message;
+      if (current === generation) ownerMenuStatus.textContent = error.message;
     } finally {
       if (current === generation) { busy = false; render(); }
     }
@@ -690,6 +703,7 @@
     if (!file || busy) return;
     const current = generation;
     busy = true;
+    ownerMenuStatus.textContent = "";
     render();
     try {
       if (file.size > 8192) throw new Error("This file is too large to be an Owner Pass.");
@@ -711,11 +725,12 @@
       url.searchParams.set("cookie", pass.cookieId);
       history.replaceState(null, "", url);
       render();
-      status.textContent = stored
+      status.textContent = cookie.bites === 3 ? "Only crumbs remain." : "";
+      ownerMenuStatus.textContent = stored
         ? "Owner Pass restored. You can control this cookie on this browser."
         : "Owner Pass restored for this tab. Browser storage is unavailable; keep your backup file.";
     } catch (error) {
-      if (current === generation) status.textContent = error.message;
+      if (current === generation) ownerMenuStatus.textContent = error.message;
     } finally {
       if (current === generation) { busy = false; render(); }
     }

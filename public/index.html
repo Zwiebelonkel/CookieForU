@@ -57,29 +57,41 @@
           Share
         </button>
         <button id="certificate" type="button" hidden>Certificate</button>
-        <a id="verify-owner" hidden target="_blank" rel="noopener noreferrer">Verify owner</a>
-        <button id="export-owner" type="button" hidden>Save Owner Pass</button>
-        <button id="import-owner" type="button">Restore Owner Pass</button>
         <button id="retry" type="button" hidden>Try again</button>
       </div>
-      <input id="owner-file" type="file" accept=".json,application/json" hidden />
-      <details id="owner-tools" class="owner-tools" hidden>
-        <summary>Confirm ownership</summary>
-        <p>Ask the verifier to open the official verification page and select “Verify owner”.
-          Only confirm a code shown on their device. They check the result on their own page.</p>
-        <form id="confirm-owner-form">
-          <label for="owner-code">Verifier’s check code</label>
-          <div class="owner-code-row">
-            <input id="owner-code" type="text" placeholder="ABCD-1234-EF56-7890"
-              autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="32" required />
-            <button id="confirm-owner" type="submit">Confirm ownership</button>
-          </div>
-        </form>
-        <p id="owner-result" role="status"></p>
-        <p>Your Owner Pass is a private backup. Anyone with the file can control this cookie.</p>
-      </details>
       <div class="status" id="status" role="status">Baking your cookie…</div>
       <noscript><p>Enable JavaScript to receive your cookie.</p></noscript>
     </main>
+    <details id="owner-menu" class="owner-menu">
+      <summary aria-label="Ownership menu" title="Ownership menu">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M5 7h14M5 12h14M5 17h14" />
+        </svg>
+      </summary>
+      <div class="owner-menu-panel">
+        <nav class="owner-menu-links" aria-label="Ownership actions">
+          <a id="verify-owner" hidden target="_blank" rel="noopener noreferrer">Verify owner</a>
+          <button id="export-owner" type="button" hidden>Save Owner Pass</button>
+          <button id="import-owner" type="button">Restore Owner Pass</button>
+        </nav>
+        <input id="owner-file" type="file" accept=".json,application/json" hidden />
+        <details id="owner-tools" class="owner-tools" hidden>
+          <summary>Confirm ownership</summary>
+          <p>Ask the verifier to open the official verification page and select “Verify owner”.
+            Only confirm a code shown on their device. They check the result on their own page.</p>
+          <form id="confirm-owner-form">
+            <label for="owner-code">Verifier’s check code</label>
+            <div class="owner-code-row">
+              <input id="owner-code" type="text" placeholder="ABCD-1234-EF56-7890"
+                autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="32" required />
+              <button id="confirm-owner" type="submit">Confirm ownership</button>
+            </div>
+          </form>
+          <p id="owner-result" role="status"></p>
+          <p>Your Owner Pass is a private backup. Anyone with the file can control this cookie.</p>
+        </details>
+        <p id="owner-menu-status" class="owner-menu-status" role="status"></p>
+      </div>
+    </details>
   </body>
 </html>

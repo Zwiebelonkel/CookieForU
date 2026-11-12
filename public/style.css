@@ -247,19 +247,81 @@ button:hover:not(:disabled) svg {
   line-height: 1.6;
   opacity: 0.75;
 }
-.owner-tools {
-  width: min(100%, 420px);
-  margin: 20px auto 0;
-  padding: 16px;
-  border: 1px solid #49372a30;
-  border-radius: 10px;
+.owner-menu {
+  position: fixed;
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  z-index: 10;
   text-align: left;
+}
+.owner-menu > summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  list-style: none;
+  cursor: pointer;
+  opacity: .45;
+  touch-action: manipulation;
+}
+.owner-menu > summary::-webkit-details-marker { display: none; }
+.owner-menu > summary::marker { content: ""; }
+.owner-menu > summary svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+.owner-menu[open] > summary,
+.owner-menu > summary:hover { opacity: .9; background: #49372a0c; }
+.owner-menu > summary:focus-visible { outline: 2px solid #49372a; outline-offset: 2px; opacity: 1; }
+.owner-menu-panel {
+  position: absolute;
+  right: 0;
+  bottom: 54px;
+  width: min(340px, calc(100vw - 32px - env(safe-area-inset-right)));
+  max-height: calc(100svh - 90px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px;
+  border: 1px solid #49372a1c;
+  border-radius: 14px;
+  background: #fffaf2f5;
+  box-shadow: 0 8px 32px #30201218;
   font-size: 12px;
   line-height: 1.6;
+}
+.owner-menu-links { display: grid; gap: 2px; }
+.owner-menu-links > * {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 44px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  opacity: .8;
+}
+.owner-menu-links > *:hover:not(:disabled) { opacity: 1; background: #49372a0c; transform: none; }
+.owner-menu-links a:focus-visible { outline: 2px solid #49372a; outline-offset: 2px; }
+.owner-tools {
+  margin: 10px 0 0;
+  padding: 14px 0 0;
+  border-top: 1px solid #49372a20;
 }
 .owner-tools summary { cursor: pointer; }
 .owner-tools p { color: #594333; }
 .owner-tools label { display: block; margin-bottom: 6px; }
+.owner-menu-status { margin: 12px 0 0; color: #594333; }
+.owner-menu-status:empty { display: none; }
 .owner-code-row { display: flex; gap: 8px; flex-wrap: wrap; }
 .owner-code-row input {
   min-width: 0;
