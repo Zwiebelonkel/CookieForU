@@ -5,6 +5,9 @@
   display: none !important;
 }
 :root {
+  --menu-surface: #b39980;
+  --menu-ink: #49372a;
+  --menu-border: #73513b55;
   color-scheme: light;
   background: #a88b72;
   color: #49372a;
@@ -248,6 +251,7 @@ button:hover:not(:disabled) svg {
   opacity: 0.75;
 }
 .owner-menu {
+  color: var(--menu-ink);
   position: fixed;
   right: max(12px, env(safe-area-inset-right));
   bottom: max(12px, env(safe-area-inset-bottom));
@@ -263,8 +267,13 @@ button:hover:not(:disabled) svg {
   border-radius: 10px;
   list-style: none;
   cursor: pointer;
-  opacity: .45;
+  background: var(--menu-surface);
+  border: 1px solid var(--menu-border);
+  box-shadow: 0 4px 14px #38251924, inset 0 1px #e6ceb244;
+  opacity: .85;
   touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 220ms ease, box-shadow 220ms ease, transform 220ms ease, opacity 220ms ease;
 }
 .owner-menu > summary::-webkit-details-marker { display: none; }
 .owner-menu > summary::marker { content: ""; }
@@ -277,7 +286,15 @@ button:hover:not(:disabled) svg {
   stroke-linecap: round;
 }
 .owner-menu[open] > summary,
-.owner-menu > summary:hover { opacity: .9; background: #49372a0c; }
+.owner-menu > summary:hover { opacity: 1; background: #bea38a; box-shadow: 0 6px 18px #38251930; }
+.owner-menu > summary:active { transform: scale(.94); }
+.owner-menu > summary svg path {
+  transform-origin: 12px 12px;
+  transition: transform 240ms ease, opacity 160ms ease;
+}
+.owner-menu[open]:not([data-closing]) > summary svg path:first-child { transform: translateY(5px) rotate(45deg); }
+.owner-menu[open]:not([data-closing]) > summary svg path:nth-child(2) { opacity: 0; }
+.owner-menu[open]:not([data-closing]) > summary svg path:last-child { transform: translateY(-5px) rotate(-45deg); }
 .owner-menu > summary:focus-visible { outline: 2px solid #49372a; outline-offset: 2px; opacity: 1; }
 .owner-menu-panel {
   position: absolute;
@@ -288,10 +305,12 @@ button:hover:not(:disabled) svg {
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 16px;
-  border: 1px solid #49372a1c;
+  border: 1px solid var(--menu-border);
   border-radius: 14px;
-  background: #fffaf2f5;
-  box-shadow: 0 8px 32px #30201218;
+  background: linear-gradient(145deg, #bda38a, var(--menu-surface));
+  box-shadow: 0 12px 36px #38251930, inset 0 1px #e6ceb255;
+  transform-origin: bottom right;
+  scrollbar-color: #73513b80 transparent;
   font-size: 12px;
   line-height: 1.6;
 }
@@ -309,6 +328,7 @@ button:hover:not(:disabled) svg {
   text-align: left;
   text-decoration: none;
   opacity: .8;
+  transition: background 180ms ease, opacity 180ms ease, transform 180ms ease;
 }
 .owner-menu-links > *:hover:not(:disabled) { opacity: 1; background: #49372a0c; transform: none; }
 .owner-menu-links a:focus-visible { outline: 2px solid #49372a; outline-offset: 2px; }
@@ -330,7 +350,7 @@ button:hover:not(:disabled) svg {
   border: 1px solid #49372a50;
   border-radius: 6px;
   padding: 10px;
-  background: #fffaf260;
+  background: #a88b7260;
   color: inherit;
   font: 16px ui-monospace, Consolas, monospace;
 }
@@ -376,11 +396,15 @@ button:hover:not(:disabled) svg {
     animation: none;
   }
   .cookie-face,
+  .owner-menu > summary,
+  .owner-menu > summary svg path,
+  .owner-menu-links > *,
   button,
   button svg,
   .actions a {
     transition: none;
   }
+  .owner-menu > summary:active { transform: none; }
   button:hover:not(:disabled),
   button:active:not(:disabled),
   button:hover:not(:disabled) svg,
