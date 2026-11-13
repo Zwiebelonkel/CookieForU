@@ -21,20 +21,70 @@
     <script src="./ownership.js" defer></script>
     <script src="./session.js" defer></script>
     <script src="./info-menu.js" defer></script>
+    <script src="./shop.js" defer></script>
+    <script src="./leaderboard.js" defer></script>
     <script src="./app.js" defer></script>
   </head>
   <body>
     <details id="info-menu" class="owner-menu info-menu">
-      <summary aria-label="Rarity chances" title="Rarity chances" aria-controls="rarity-info-panel">
+      <summary
+        aria-label="Rarity chances"
+        title="Rarity chances"
+        aria-controls="rarity-info-panel"
+      >
         <span class="info-icon" aria-hidden="true">i</span>
       </summary>
-      <section id="rarity-info-panel" class="owner-menu-panel info-menu-panel" aria-labelledby="rarity-info-title">
+      <section
+        id="rarity-info-panel"
+        class="owner-menu-panel info-menu-panel"
+        aria-labelledby="rarity-info-title"
+      >
         <h2 id="rarity-info-title">A little luck.</h2>
-        <p class="info-intro">Every cookie is random. Here’s how rare yours could be.</p>
+        <p class="info-intro">
+          Every cookie is random. Here’s how rare yours could be.
+        </p>
         <div id="rarity-chances"></div>
         <p id="rarity-info-status" role="status">Loading chances…</p>
         <button id="retry-rarity-info" type="button" hidden>Try again</button>
-        <p class="info-footnote">Bars share a 0–100% scale. Very small chances appear as a thin mark.</p>
+        <p class="info-footnote">
+          Bars share a 0–100% scale. Very small chances appear as a thin mark.
+        </p>
+      </section>
+    </details>
+    <details id="leaderboard-menu" class="owner-menu leaderboard-menu">
+      <summary
+        aria-label="Leaderboard"
+        title="Leaderboard"
+        aria-controls="leaderboard-panel"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <g>
+            <path d="M8 3h8v5a4 4 0 0 1-8 0V3Z" />
+            <path
+              d="M8 5H5v2a4 4 0 0 0 4 4m7-6h3v2a4 4 0 0 1-4 4M12 12v5m-4 4v-2a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2H8Z"
+            />
+          </g>
+        </svg>
+      </summary>
+      <section
+        id="leaderboard-panel"
+        class="owner-menu-panel leaderboard-panel"
+        aria-labelledby="leaderboard-title"
+      >
+        <p class="leaderboard-eyebrow">The all-time top 10</p>
+        <h2 id="leaderboard-title">The rarest bites.</h2>
+        <p class="info-intro">The luckiest cookies ever drawn.</p>
+        <ol
+          id="leaderboard-list"
+          class="leaderboard-list"
+          aria-label="Rarest cookies"
+        ></ol>
+        <p id="leaderboard-status" role="status">Open to see the top 10.</p>
+        <button id="retry-leaderboard" type="button" hidden>Try again</button>
+        <p class="info-footnote">
+          Longest matching streak first. Earlier draws win ties. Even eaten
+          cookies keep their place.
+        </p>
       </section>
     </details>
     <main aria-label="A cookie just for you">
@@ -64,8 +114,16 @@
       <div class="rarity-stars" id="rarity-stars" role="img" hidden></div>
       <p class="message" id="message">Cookie is getting delivered.</p>
       <div id="baking-info" class="baking-info" hidden>
-        <output id="baking-timer" role="timer" aria-label="Time until the next cookie">10:00</output>
-        <p>10 cookies every 10 minutes.<br>Your next cookie will arrive automatically.</p>
+        <output
+          id="baking-timer"
+          role="timer"
+          aria-label="Time until the next cookie"
+          >10:00</output
+        >
+        <p>
+          10 cookies every 10 minutes.<br />Your next cookie will arrive
+          automatically.
+        </p>
       </div>
       <div class="actions">
         <button id="eat" type="button" disabled>Eat cookie</button>
@@ -82,6 +140,42 @@
       <div class="status" id="status" role="status">Baking your cookie…</div>
       <noscript><p>Enable JavaScript to receive your cookie.</p></noscript>
     </main>
+    <button
+      id="open-shop"
+      class="shop-trigger"
+      type="button"
+      lang="de"
+      aria-haspopup="dialog"
+      aria-controls="cookie-shop"
+      aria-expanded="false"
+    >
+      <span aria-hidden="true">🍪</span> Kaufen
+    </button>
+    <dialog
+      id="cookie-shop"
+      class="shop-dialog"
+      lang="de"
+      aria-labelledby="shop-title"
+      aria-describedby="shop-description"
+    >
+      <div class="shop-heading">
+        <span class="shop-badge">Laden</span>
+        <button
+          id="close-shop"
+          class="shop-close"
+          type="button"
+          aria-label="Shop schließen"
+          autofocus
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m6 6 12 12M18 6 6 18" />
+          </svg>
+        </button>
+      </div>
+      <h2 id="shop-title">Noch ein paar Kekse?</h2>
+      <p id="shop-description">Such dir eine Portion aus.</p>
+      <div id="shop-packages" class="shop-packages"></div>
+    </dialog>
     <details id="owner-menu" class="owner-menu">
       <summary aria-label="Ownership menu" title="Ownership menu">
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -92,25 +186,50 @@
       </summary>
       <div class="owner-menu-panel">
         <nav class="owner-menu-links" aria-label="Ownership actions">
-          <a id="verify-owner" hidden target="_blank" rel="noopener noreferrer">Verify owner</a>
-          <button id="export-owner" type="button" hidden>Save Owner Pass</button>
+          <a id="verify-owner" hidden target="_blank" rel="noopener noreferrer"
+            >Verify owner</a
+          >
+          <button id="export-owner" type="button" hidden>
+            Save Owner Pass
+          </button>
           <button id="import-owner" type="button">Restore Owner Pass</button>
         </nav>
-        <input id="owner-file" type="file" accept=".json,application/json" hidden />
+        <input
+          id="owner-file"
+          type="file"
+          accept=".json,application/json"
+          hidden
+        />
         <details id="owner-tools" class="owner-tools" hidden>
           <summary>Confirm ownership</summary>
-          <p>Ask the verifier to open the official verification page and select “Verify owner”.
-            Only confirm a code shown on their device. They check the result on their own page.</p>
+          <p>
+            Ask the verifier to open the official verification page and select
+            “Verify owner”. Only confirm a code shown on their device. They
+            check the result on their own page.
+          </p>
           <form id="confirm-owner-form">
             <label for="owner-code">Verifier’s check code</label>
             <div class="owner-code-row">
-              <input id="owner-code" type="text" placeholder="ABCD-1234-EF56-7890"
-                autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="32" required />
-              <button id="confirm-owner" type="submit">Confirm ownership</button>
+              <input
+                id="owner-code"
+                type="text"
+                placeholder="ABCD-1234-EF56-7890"
+                autocomplete="off"
+                autocapitalize="characters"
+                spellcheck="false"
+                maxlength="32"
+                required
+              />
+              <button id="confirm-owner" type="submit">
+                Confirm ownership
+              </button>
             </div>
           </form>
           <p id="owner-result" role="status"></p>
-          <p>Your Owner Pass is a private backup. Anyone with the file can control this cookie.</p>
+          <p>
+            Your Owner Pass is a private backup. Anyone with the file can
+            control this cookie.
+          </p>
         </details>
         <p id="owner-menu-status" class="owner-menu-status" role="status"></p>
       </div>

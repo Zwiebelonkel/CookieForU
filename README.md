@@ -14,8 +14,15 @@ HTML-Frontend und druckbaren Zertifikaten. Kein Sites-Projekt.
   danach wird automatisch erneut ein Keks angefordert.
 - Unverändertes Original und Raritätsregel v1 dauerhaft in Turso.
 - Kaffeebraune Website mit pulsierendem, langsam rotierendem Cookie.
+- „Kaufen“-Button unten links mit drei Demo-Paketen: 10 Kekse für 4,99 €,
+  25 für 9,99 € und 60 für 19,99 €. Simulierte Käufe erhöhen ausschließlich
+  den Demo-Vorrat im geöffneten Tab; beim Neuladen wird er zurückgesetzt.
+  Keine Zahlung, API-Anfrage, echte Keksausgabe oder Änderung des Ausgabelimits.
 - Animiertes Info-Menü oben links mit Raritätschancen, Sternen und farbigen
   Prozentbalken. Die Werte kommen direkt aus den Raritätsregeln des Servers.
+- Ranglisten-Button oben rechts mit den zehn seltensten jemals ausgegebenen
+  Keksen. Ein abdeckender Datenbankindex liefert nur die ersten zehn Einträge;
+  ein geteilter 30-Sekunden-Cache spart weitere Abfragen. Laden erst beim Öffnen.
 - Raritätsabhängige Kontur und Leuchten am Cookie, auch an Bisskanten.
   Seltenere Cookies schweben und pulsieren stärker und drehen sich schneller
   (60 Sekunden pro Umdrehung bei Common bis 9 Sekunden bei Mythic).
@@ -56,6 +63,8 @@ public/app.js
 public/ownership.js
 public/session.js
 public/info-menu.js
+public/shop.js
+public/leaderboard.js
 public/style.css
 public/apple-touch-icon.png
 public/certificate.css
@@ -220,6 +229,33 @@ Die Tests für den Prüfstatus führen das Frontend-Skript mit einer simulierten
 und Timer-Umgebung aus; sie ersetzen keine visuelle Prüfung im echten Browser.
 
 ## API
+
+### Allzeit-Rangliste
+
+```http
+GET /api/leaderboard
+```
+
+Öffentlich, ohne Session oder Besitzer-Token. Liefert maximal zehn `cookies`
+mit Rang, Original-ID, Ausgabezeit, längster Zeichenserie, Rarität, Sternen und
+öffentlichen Links sowie `refreshAfterMs` für den Browser-Cache. Die Reihenfolge
+ist `max_streak DESC, created_at ASC, id ASC`: Längere identische Zeichenserien
+stehen zuerst, auch innerhalb derselben Raritätsstufe. Bei Gleichstand gewinnt
+die frühere Ausgabe, danach die ID. Aufgegessene Kekse bleiben berücksichtigt.
+
+Der beim Start automatisch angelegte Index `cookies_rarity_ranking` enthält die
+benötigten Spalten bereits in dieser Reihenfolge. Bestehende Kekse werden beim
+ersten Anlegen des Index einmalig erfasst. Danach pflegt die Datenbank den Index
+bei jeder Ausgabe mit. Die Ranglistenabfrage liest höchstens zehn Indexeinträge
+ohne vollständigen Tabellenscan oder zusätzliche Sortierung. Es gibt keine
+separate Top-10-Tabelle, die mit dem Register auseinanderlaufen könnte.
+
+Pro Serverinstanz werden die Ergebnisse 30 Sekunden zwischengespeichert;
+gleichzeitige Aufrufe teilen eine laufende Abfrage. Neue Ausgaben dieser Instanz
+verwerfen ihren Cache sofort. Ausgaben anderer Instanzen erscheinen nach Ablauf
+des Cache. Das Menü lädt nur beim Öffnen und verwendet die verbleibende
+Cache-Dauer aus der Antwort; es fragt im Hintergrund nicht regelmäßig ab.
+Beim erneuten Öffnen nach Ablauf wird die Liste aktualisiert.
 
 ### Neuen Cookie ausstellen
 

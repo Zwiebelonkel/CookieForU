@@ -12,6 +12,11 @@ CREATE TABLE IF NOT EXISTS cookies (
       OR (bites < 3 AND eaten_at IS NULL))
 );
 
+-- Covers the all-time top 10: walk the first ten index entries without
+-- reading or sorting the full cookie register. Maintained on every insertion.
+CREATE INDEX IF NOT EXISTS cookies_rarity_ranking
+  ON cookies(max_streak DESC, created_at ASC, id ASC);
+
 CREATE TABLE IF NOT EXISTS owner_checks (
   code TEXT PRIMARY KEY NOT NULL
     CHECK(length(code) = 16 AND code NOT GLOB '*[^0-9a-f]*'),

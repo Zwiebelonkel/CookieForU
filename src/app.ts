@@ -4,12 +4,14 @@ import { fileURLToPath } from 'node:url';
 import { HEX_ID, describe, findCookie, issueCookie, ownsCookie, takeBite, levels, RULES_VERSION, createCookieSession } from './cookies.js';
 import { certificatePage, notFoundPage } from './pages.js';
 import { CHECK_CODE, createCheck, findCheck, confirmCheck, describeCheck } from './owner-checks.js';
+import { createLeaderboard } from './leaderboard.js';
 
 interface Config { publicBaseUrl: string; corsOrigin?: string; rateLimits?: boolean }
 
 export function createApp(db: Client, config: Config) {
   const app = express();
   const origin = new URL(config.publicBaseUrl).origin;
+  const leaderboard = createLeaderboard(db, origin);
   app.disable('x-powered-by');
   // Render is the public-facing reverse proxy for the single web service.
   app.set('trust proxy', 1);
@@ -69,6 +71,10 @@ export function createApp(db: Client, config: Config) {
     res.json({ rulesVersion: RULES_VERSION, rarities: levels });
   });
 
+  app.get('/api/leaderboard', async (_req, res) => {
+    res.json(await leaderboard.read());
+  });
+
   app.post('/api/session', async (req, res) => {
     if (Object.keys(req.body ?? {}).length) { res.status(400).json({ error: 'Send an empty body.' }); return; }
     res.status(201).json({ sessionToken: await createCookieSession(db) });
@@ -97,6 +103,7 @@ export function createApp(db: Client, config: Config) {
       res.set('Retry-After', String(Math.ceil(result.retryAfterMs! / 1000)));
       res.status(429).json({ error: 'Cookies are getting baked.', code: result.error, retryAfterMs: result.retryAfterMs }); return;
     }
+    if (result.created) leaderboard.invalidate();
     res.status(result.created ? 201 : 200).json({ cookie: describe(result.row, origin) });
   });
 
